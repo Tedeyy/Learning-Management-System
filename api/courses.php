@@ -16,14 +16,16 @@ if ($db === null) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$type = $_GET['type'] ?? 'courses'; // courses, categories, activities, materials
+$type = $_GET['type'] ?? 'courses';
 
 if ($method === 'GET') {
     if ($type === 'courses') {
         $instructor_id = $_GET['instructor_id'] ?? null;
         $search = $_GET['search'] ?? null;
 
-        $query = "SELECT c.*, u.first_name, u.last_name as instructor_name FROM courses c JOIN users u ON c.instructor_id = u.id";
+        $query = "SELECT c.id, c.title, c.description, c.created_at, u.first_name, u.last_name as instructor_name 
+                  FROM courses c 
+                  JOIN users u ON c.instructor_id = u.id";
         $params = [];
 
         if ($instructor_id) {
@@ -106,11 +108,12 @@ if ($method === 'GET') {
         }
     } elseif ($type === 'materials') {
         if (!empty($data->title) && !empty($data->url) && !empty($data->course_id)) {
-            $query = "INSERT INTO learning_materials (course_id, title, url, material_type) 
-                      VALUES (:course_id, :title, :url, :type)";
+            $query = "INSERT INTO learning_materials (course_id, title, description, url, material_type) 
+                      VALUES (:course_id, :title, :description, :url, :type)";
             $stmt = $db->prepare($query);
             $stmt->bindValue(":course_id", $data->course_id);
             $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
+            $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
             $stmt->bindValue(":url", htmlspecialchars(strip_tags($data->url)));
             $stmt->bindValue(":type", $data->material_type ?? 'link');
             if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material added"]); }

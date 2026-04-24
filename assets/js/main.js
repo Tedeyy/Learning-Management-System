@@ -138,70 +138,132 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Activities & Materials
     function openActivityManager() {
-        document.getElementById('no-category-selected').style.display = 'none';
-        document.getElementById('category-details').style.display = 'block';
-        document.getElementById('selected-category-name').textContent = selectedCategory.name;
+        const noCatMsg = document.getElementById('no-category-selected');
+        const catDetails = document.getElementById('category-details');
+        const catTitle = document.getElementById('selected-category-name');
+        
+        if(noCatMsg) noCatMsg.style.display = 'none';
+        if(catDetails) catDetails.style.display = 'block';
+        if(catTitle) catTitle.textContent = selectedCategory.name;
+        
         loadCurriculumItems();
     }
 
+    // Preview Logic
+    function getPreviewHTML(url, type) {
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+            const vidId = url.split('v=')[1] || url.split('/').pop();
+            return `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${vidId}" frameborder="0" allowfullscreen style="border-radius: 10px;"></iframe>`;
+        }
+        if (type === 'pdf' || url.endsWith('.pdf')) {
+            return `<iframe src="${url}" width="100%" height="500px" style="border: none; border-radius: 10px;"></iframe>`;
+        }
+        return `<div style="padding: 1rem; background: #eee; border-radius: 10px; text-align: center;">
+                    <p style="margin-bottom: 0.5rem;">Resource Link Preview</p>
+                    <a href="${url}" target="_blank" style="color: var(--secondary-color); font-weight: 600;">Open External Resource <i data-lucide="external-link" style="width: 14px;"></i></a>
+                </div>`;
+    }
+
     async function loadCurriculumItems() {
-        // Load Activities
-        const actRes = await fetch(`../api/courses.php?type=activities&category_id=${selectedCategory.id}`);
-        const activities = await actRes.json();
-        
-        // Load Materials (for the course)
-        const matRes = await fetch(`../api/courses.php?type=materials&course_id=${selectedCourse.id}`);
-        const materials = await matRes.json();
-
         const list = document.getElementById('activities-list');
-        list.innerHTML = '';
+        if(!list) return;
+        list.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading curriculum...</p>';
 
-        if(materials.length > 0) {
-            const matHeader = document.createElement('h5');
-            matHeader.textContent = "General Materials";
-            matHeader.style.margin = "1rem 0 0.5rem";
-            list.appendChild(matHeader);
-            materials.forEach(mat => {
-                const el = document.createElement('div');
-                el.className = 'course-card';
-                el.style.padding = '1rem'; el.style.borderLeft = '4px solid #2ecc71'; el.style.marginBottom = '10px';
-                el.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong style="color: #27ae60;">${mat.title}</strong>
-                            <p style="font-size: 0.75rem; color: #999;">Type: ${mat.material_type}</p>
+        try {
+            const actRes = await fetch(`../api/courses.php?type=activities&category_id=${selectedCategory.id}`);
+            const activities = await actRes.json();
+            const matRes = await fetch(`../api/courses.php?type=materials&course_id=${selectedCourse.id}`);
+            const materials = await matRes.json();
+
+            list.innerHTML = '';
+
+            // 1. Render Materials
+            if(materials.length > 0) {
+                const matHeader = document.createElement('h5');
+                matHeader.textContent = "General Materials";
+                matHeader.style.margin = "1rem 0 0.5rem";
+                list.appendChild(matHeader);
+
+                materials.forEach(mat => {
+                    const container = document.createElement('div');
+                    container.style.marginBottom = '10px';
+                    
+                    const card = document.createElement('div');
+                    card.className = 'course-card';
+                    card.style.padding = '1rem'; card.style.borderLeft = '4px solid #2ecc71'; card.style.cursor = 'pointer';
+                    card.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div style="flex: 1;">
+                                <strong style="color: #27ae60;">${mat.title}</strong>
+                                <p style="font-size: 0.85rem; color: #666; margin-bottom: 0.2rem;">${mat.description || ''}</p>
+                                <p style="font-size: 0.75rem; color: #999;">Type: ${mat.material_type}</p>
+                            </div>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <button class="edit-mat-btn" data-id="${mat.id}" style="border: none; background: transparent; cursor: pointer; color: #999; padding: 5px;">
+                                    <i data-lucide="pencil" style="width: 16px; height: 16px;"></i>
+                                </button>
+                                <i data-lucide="chevron-down" class="dropdown-icon" style="transition: transform 0.3s ease;"></i>
+                            </div>
                         </div>
-                        <a href="${mat.url}" target="_blank" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.75rem;">View</a>
-                    </div>
-                `;
-                list.appendChild(el);
-            });
+                        <div class="preview-content" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                            ${getPreviewHTML(mat.url, mat.material_type)}
+                        </div>
+                    `;
+
+                    // Toggle logic
+                    card.addEventListener('click', (e) => {
+                        // Prevent toggle if clicking edit button
+                        if(e.target.closest('.edit-mat-btn')) return;
+                        
+                        const preview = card.querySelector('.preview-content');
+                        const icon = card.querySelector('.dropdown-icon');
+                        const isOpen = preview.style.display === 'block';
+                        preview.style.display = isOpen ? 'none' : 'block';
+                        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)';
+                    });
+
+                    // Edit button logic
+                    card.querySelector('.edit-mat-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        alert('Edit Material feature coming in next step!');
+                    });
+
+                    container.appendChild(card);
+                    list.appendChild(container);
+                });
+            }
+
+            // 2. Render Activities
+            const actHeader = document.createElement('h5');
+            actHeader.textContent = "Module Activities";
+            actHeader.style.margin = "2rem 0 0.5rem";
+            list.appendChild(actHeader);
+
+            if(activities.length === 0) {
+                const emptyMsg = document.createElement('p');
+                emptyMsg.style.textAlign = 'center'; emptyMsg.style.color = '#999'; emptyMsg.style.padding = '2rem';
+                emptyMsg.textContent = 'No activities in this module yet.';
+                list.appendChild(emptyMsg);
+            } else {
+                activities.forEach(act => {
+                    const el = document.createElement('div');
+                    el.className = 'course-card';
+                    el.style.padding = '1rem'; el.style.borderLeft = '4px solid var(--secondary-color)'; el.style.marginBottom = '10px';
+                    const seqStr = act.sequence_number ? `${act.sequence_number}. ` : '';
+                    el.innerHTML = `
+                        <div style="display: flex; justify-content: space-between;">
+                            <strong>${seqStr}${act.title}</strong>
+                            <span style="font-size: 0.75rem; text-transform: uppercase; background: #eee; padding: 2px 8px; border-radius: 4px;">${act.activity_type}</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: #666; margin-top: 5px;">${act.description}</p>
+                    `;
+                    list.appendChild(el);
+                });
+            }
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+        } catch (error) {
+            list.innerHTML = `<p style="color: red; text-align: center; padding: 2rem;">Error loading curriculum: ${error.message}</p>`;
         }
-
-        const actHeader = document.createElement('h5');
-        actHeader.textContent = "Module Activities";
-        actHeader.style.margin = "1rem 0 0.5rem";
-        list.appendChild(actHeader);
-
-        if(activities.length === 0) {
-            list.innerHTML += '<p style="text-align: center; color: #999; padding: 2rem;">No activities in this module yet.</p>';
-        }
-
-        activities.forEach(act => {
-            const el = document.createElement('div');
-            el.className = 'course-card';
-            el.style.padding = '1rem'; el.style.borderLeft = '4px solid var(--secondary-color)'; el.style.marginBottom = '10px';
-            const seqStr = act.sequence_number ? `${act.sequence_number}. ` : '';
-            el.innerHTML = `
-                <div style="display: flex; justify-content: space-between;">
-                    <strong>${seqStr}${act.title}</strong>
-                    <span style="font-size: 0.75rem; text-transform: uppercase; background: #eee; padding: 2px 8px; border-radius: 4px;">${act.activity_type}</span>
-                </div>
-                <p style="font-size: 0.85rem; color: #666; margin-top: 5px;">${act.description}</p>
-            `;
-            list.appendChild(el);
-        });
-        if(typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     // Modal Toggles
@@ -248,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = {
             course_id: selectedCourse.id,
             title: document.getElementById('mat-title').value,
+            description: document.getElementById('mat-desc').value,
             url: document.getElementById('mat-url').value,
             material_type: document.getElementById('mat-type').value
         };

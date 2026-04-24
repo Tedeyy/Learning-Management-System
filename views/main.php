@@ -208,6 +208,10 @@ include 'content/navbar.php';
                                     <input type="url" id="mat-url" placeholder="https://example.com/file.pdf" required>
                                 </div>
                                 <div class="form-group">
+                                    <label>Description (Optional)</label>
+                                    <textarea id="mat-desc" placeholder="What is this resource for?" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; height: 80px;"></textarea>
+                                </div>
+                                <div class="form-group">
                                     <label>Type</label>
                                     <select id="mat-type" class="form-control" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd;">
                                         <option value="link">External Link</option>
