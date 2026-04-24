@@ -69,7 +69,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showMessage(registerMsg, result.message || 'Registration failed.');
             }
         } catch (error) {
-            showMessage(registerMsg, 'An error occurred. Please try again.');
+            console.error('Registration error:', error);
+            showMessage(registerMsg, 'Server connection failed. Please ensure your XAMPP server is running and the database exists.');
         }
     });
 
@@ -98,7 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 showMessage(loginMsg, result.message || 'Login failed.');
             }
         } catch (error) {
-            showMessage(loginMsg, 'An error occurred. Please try again.');
+            console.error('Login error:', error);
+            showMessage(loginMsg, 'Server connection failed. Please ensure your XAMPP server is running and the database exists.');
         }
     });
 });
