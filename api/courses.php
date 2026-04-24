@@ -44,7 +44,6 @@ if ($method === 'GET') {
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     } elseif ($type === 'activities') {
         $category_id = $_GET['category_id'] ?? null;
-        // ORDER BY oldest to newest
         $query = "SELECT * FROM activities WHERE category_id = :category_id ORDER BY created_at ASC";
         $stmt = $db->prepare($query);
         $stmt->bindParam(":category_id", $category_id);
@@ -52,7 +51,6 @@ if ($method === 'GET') {
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     } elseif ($type === 'materials') {
         $course_id = $_GET['course_id'] ?? null;
-        // ORDER BY oldest to newest
         $query = "SELECT * FROM learning_materials WHERE course_id = :course_id ORDER BY created_at ASC";
         $stmt = $db->prepare($query);
         $stmt->bindParam(":course_id", $course_id);
@@ -77,15 +75,16 @@ if ($method === 'GET') {
         $stmt->bindValue(":now", $now);
         if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Category created"]); }
     } elseif ($type === 'activities') {
-        $query = "INSERT INTO activities (category_id, course_id, title, description, activity_type, sequence_number, created_at) 
-                  VALUES (:category_id, :course_id, :title, :description, :type, :seq, :now)";
+        $query = "INSERT INTO activities (category_id, course_id, title, description, activity_type, content_url, sequence_number, created_at) 
+                  VALUES (:category_id, :course_id, :title, :description, :type, :url, :seq, :now)";
         $stmt = $db->prepare($query);
         $stmt->bindValue(":category_id", $data->category_id);
         $stmt->bindValue(":course_id", $data->course_id);
         $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
         $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
-        $stmt->bindValue(":type", $data->activity_type ?? 'reading');
-        $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : null);
+        $stmt->bindValue(":type", $data->activity_type ?? 'google_form');
+        $stmt->bindValue(":url", $data->content_url ?? '');
+        $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : 0);
         $stmt->bindValue(":now", $now);
         if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Activity created"]); }
     } elseif ($type === 'materials') {
@@ -102,7 +101,13 @@ if ($method === 'GET') {
     }
 } elseif ($method === 'PUT') {
     $data = json_decode(file_get_contents("php://input"));
-    if ($type === 'materials') {
+    if ($type === 'categories') {
+        $query = "UPDATE activity_categories SET name = :name WHERE id = :id";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(":id", $data->id);
+        $stmt->bindValue(":name", htmlspecialchars(strip_tags($data->name)));
+        if ($stmt->execute()) { echo json_encode(["message" => "Category updated"]); }
+    } elseif ($type === 'materials') {
         $query = "UPDATE learning_materials SET title = :title, description = :description, url = :url, material_type = :type, updated_at = :now WHERE id = :id";
         $stmt = $db->prepare($query);
         $stmt->bindValue(":id", $data->id);
@@ -113,14 +118,35 @@ if ($method === 'GET') {
         $stmt->bindValue(":now", $now);
         if ($stmt->execute()) { echo json_encode(["message" => "Material updated"]); }
     } elseif ($type === 'activities') {
-        $query = "UPDATE activities SET title = :title, description = :description, activity_type = :type, sequence_number = :seq, updated_at = :now WHERE id = :id";
+        $query = "UPDATE activities SET title = :title, description = :description, content_url = :url, activity_type = :type, sequence_number = :seq, updated_at = :now WHERE id = :id";
         $stmt = $db->prepare($query);
         $stmt->bindValue(":id", $data->id);
         $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
         $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
-        $stmt->bindValue(":type", $data->activity_type ?? 'reading');
-        $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : null);
+        $stmt->bindValue(":url", $data->content_url ?? '');
+        $stmt->bindValue(":type", $data->activity_type ?? 'google_form');
+        $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : 0);
         $stmt->bindValue(":now", $now);
         if ($stmt->execute()) { echo json_encode(["message" => "Activity updated"]); }
+    }
+} elseif ($method === 'DELETE') {
+    $id = $_GET['id'] ?? null;
+    if (!$id) { http_response_code(400); echo json_encode(["message" => "ID required"]); exit(); }
+    
+    if ($type === 'categories') {
+        $query = "DELETE FROM activity_categories WHERE id = :id";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(":id", $id);
+        if ($stmt->execute()) { echo json_encode(["message" => "Category deleted"]); }
+    } elseif ($type === 'activities') {
+        $query = "DELETE FROM activities WHERE id = :id";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(":id", $id);
+        if ($stmt->execute()) { echo json_encode(["message" => "Activity deleted"]); }
+    } elseif ($type === 'materials') {
+        $query = "DELETE FROM learning_materials WHERE id = :id";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(":id", $id);
+        if ($stmt->execute()) { echo json_encode(["message" => "Material deleted"]); }
     }
 }
