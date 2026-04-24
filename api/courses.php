@@ -152,6 +152,23 @@ try {
             $stmt->bindParam(":cid", $course_id);
             $stmt->execute();
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        } elseif ($type === 'comments') {
+            $activity_id = $_GET['activity_id'] ?? null;
+            $material_id = $_GET['material_id'] ?? null;
+            
+            $query = "SELECT cm.*, CONCAT(u.first_name, ' ', u.last_name) as user_name, u.role as user_role 
+                      FROM comments cm 
+                      JOIN users u ON cm.user_id = u.id 
+                      WHERE " . ($activity_id ? "cm.activity_id = :aid" : "cm.material_id = :mid") . " 
+                      ORDER BY cm.created_at ASC";
+            $stmt = $db->prepare($query);
+            if ($activity_id) {
+                $stmt->bindValue(":aid", $activity_id, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(":mid", $material_id, $material_id === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         }
     } elseif ($method === 'POST') {
         $data = json_decode(file_get_contents("php://input"));
@@ -213,6 +230,30 @@ try {
             $stmt->bindValue(":material_id", $data->material_id);
             $stmt->bindValue(":student_id", $data->student_id);
             if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material viewed"]); }
+        } elseif ($type === 'comments') {
+            try {
+                $query = "INSERT INTO comments (activity_id, material_id, user_id, content, created_at) VALUES (:aid, :mid, :uid, :content, :now)";
+                $stmt = $db->prepare($query);
+                
+                // Ensure activity_id and material_id are null if not present
+                $aid = isset($data->activity_id) ? $data->activity_id : null;
+                $mid = isset($data->material_id) ? $data->material_id : null;
+                
+                $stmt->bindValue(":aid", $aid, $aid === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                $stmt->bindValue(":mid", $mid, $mid === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                $stmt->bindValue(":uid", $data->user_id, PDO::PARAM_INT);
+                $stmt->bindValue(":content", htmlspecialchars(strip_tags($data->content)));
+                $stmt->bindValue(":now", $now);
+                
+                if ($stmt->execute()) { 
+                    http_response_code(201); 
+                    echo json_encode(["message" => "Comment posted"]); 
+                } else {
+                    throw new Exception("Execute failed: " . implode(" ", $stmt->errorInfo()));
+                }
+            } catch (PDOException $ex) {
+                throw new Exception("Database Error: " . $ex->getMessage());
+            }
         }
     } elseif ($method === 'PUT') {
         $data = json_decode(file_get_contents("php://input"));
@@ -249,21 +290,18 @@ try {
             $course_id = $_GET['course_id'] ?? null;
             $student_id = $_GET['student_id'] ?? null;
             
-            // Delete submissions for this student in this course
             $q1 = "DELETE FROM submissions WHERE student_id = :sid AND activity_id IN (SELECT id FROM activities WHERE course_id = :cid)";
             $s1 = $db->prepare($q1);
             $s1->bindValue(":sid", $student_id);
             $s1->bindValue(":cid", $course_id);
             $s1->execute();
             
-            // Delete material views for this student in this course
             $q2 = "DELETE FROM material_views WHERE student_id = :sid AND material_id IN (SELECT id FROM learning_materials WHERE course_id = :cid)";
             $s2 = $db->prepare($q2);
             $s2->bindValue(":sid", $student_id);
             $s2->bindValue(":cid", $course_id);
             $s2->execute();
             
-            // Delete the enrollment itself
             $query = "DELETE FROM enrollments WHERE course_id = :cid AND student_id = :sid";
             $stmt = $db->prepare($query);
             $stmt->bindValue(":cid", $course_id);

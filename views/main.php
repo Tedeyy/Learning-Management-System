@@ -110,6 +110,7 @@ include 'content/navbar.php';
                 <a href="#" id="back-to-courses" style="display: flex; align-items: center; gap: 5px;">
                     <i data-lucide="chevron-left"></i> Back to Courses
                 </a>
+                <span id="current-course-name" style="margin-left: 1rem; color: #333;"></span>
             </div>
         </div>
 
@@ -191,7 +192,7 @@ include 'content/navbar.php';
                     <div id="category-details" style="display: none;">
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 id="selected-category-name">Module Activities</h3>
+                            <h3 id="current-category-name">Module Activities</h3>
                             <div style="display: flex; gap: 10px;">
                                 <button id="show-add-material" class="btn btn-outline"
                                     style="padding: 0.5rem 1rem; font-size: 0.85rem; border-color: #2ecc71; color: #2ecc71;">+

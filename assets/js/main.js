@@ -68,6 +68,105 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 100);
     };
 
+    // --- Comment System Helpers ---
+
+    async function loadComments(targetId, targetType, container) {
+        try {
+            const url = `../api/courses.php?type=comments&${targetType}_id=${targetId}`;
+            const res = await fetch(url);
+            const comments = await res.json();
+            
+            if (!Array.isArray(comments)) return;
+            
+            container.innerHTML = comments.length === 0 
+                ? '<p style="font-size: 0.8rem; color: #999; text-align: center; padding: 1rem;">No discussions yet. Be the first to comment!</p>' 
+                : '';
+            
+            comments.forEach(c => {
+                const date = new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const initials = c.user_name.split(' ').map(n => n[0]).join('').toUpperCase();
+                const isInstructor = c.user_role === 'instructor';
+                
+                const commentEl = document.createElement('div');
+                commentEl.style.display = 'flex';
+                commentEl.style.gap = '12px';
+                commentEl.style.marginBottom = '1rem';
+                commentEl.style.paddingBottom = '1rem';
+                commentEl.style.borderBottom = '1px solid #f9f9f9';
+                
+                commentEl.innerHTML = `
+                    <div style="width: 32px; height: 32px; background: ${isInstructor ? 'var(--primary-color)' : '#f1f5f9'}; color: ${isInstructor ? 'white' : '#64748b'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0;">${initials}</div>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                            <span style="font-weight: 700; font-size: 0.85rem; color: #333;">${c.user_name}</span>
+                            ${isInstructor ? '<span style="background: #eef2ff; color: var(--primary-color); font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">Instructor</span>' : ''}
+                            <span style="color: #999; font-size: 0.7rem;">${date}</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: #4b5563; line-height: 1.5; white-space: pre-wrap;">${c.content}</p>
+                    </div>
+                `;
+                container.appendChild(commentEl);
+            });
+        } catch (e) {
+            container.innerHTML = '<p style="color: red; font-size: 0.7rem;">Error loading comments.</p>';
+        }
+    }
+
+    function createCommentSection(targetId, targetType) {
+        const section = document.createElement('div');
+        section.className = 'comment-section';
+        section.style.marginTop = '1.5rem';
+        section.style.paddingTop = '1.5rem';
+        section.style.borderTop = '1px solid #eee';
+        
+        // Prevent click events in the comment section from bubbling up to the card
+        section.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+        
+        section.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem; color: #666;">
+                <i data-lucide="message-square" style="width: 16px;"></i>
+                <h6 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">Public Discussion</h6>
+            </div>
+            <div class="comments-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 1.5rem; padding-right: 5px;">
+                <p style="text-align: center; color: #999; font-size: 0.8rem;">Loading discussion...</p>
+            </div>
+            <div class="comment-input-area" style="display: flex; gap: 10px;">
+                <input type="text" class="comment-field" placeholder="Share your thoughts..." style="flex: 1; padding: 10px 15px; border-radius: 10px; border: 1px solid #eee; font-size: 0.85rem; background: #fafafa;">
+                <button class="post-comment-btn btn btn-primary" style="padding: 10px 15px; border-radius: 10px; display: flex; align-items: center; justify-content: center;"><i data-lucide="send" style="width: 16px;"></i></button>
+            </div>
+        `;
+        
+        const list = section.querySelector('.comments-list-container');
+        const input = section.querySelector('.comment-field');
+        const btn = section.querySelector('.post-comment-btn');
+        
+        loadComments(targetId, targetType, list);
+        
+        const doPost = async () => {
+            const content = input.value.trim();
+            if (!content) return;
+            
+            btn.disabled = true;
+            const data = { user_id: currentUser.id, content: content };
+            data[`${targetType}_id`] = targetId;
+            
+            try {
+                const res = await fetch('../api/courses.php?type=comments', { method: 'POST', body: JSON.stringify(data) });
+                if (res.ok) {
+                    input.value = '';
+                    loadComments(targetId, targetType, list);
+                }
+            } catch (e) {} finally { btn.disabled = false; }
+        };
+        
+        btn.addEventListener('click', doPost);
+        input.addEventListener('keypress', (e) => { if(e.key === 'Enter') doPost(); });
+        
+        return section;
+    }
+
     // --- Instructor Actions ---
     
     async function loadInstructorCourses() {
@@ -103,7 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
         instructorCoursesSection.style.display = 'none';
         courseManagerSection.style.display = 'block';
         breadcrumb.style.display = 'block';
-        document.getElementById('current-course-name').textContent = selectedCourse.title;
+        const courseNameEl = document.getElementById('current-course-name');
+        if(courseNameEl) courseNameEl.textContent = selectedCourse.title;
         selectedCategory = null;
         
         // Reset Tabs
@@ -268,12 +368,23 @@ document.addEventListener('DOMContentLoaded', () => {
             el.innerHTML = `<span style="font-weight: 500;">${cat.name}</span><div class="category-options" style="position: relative;"><button class="cat-menu-btn" style="border: none; background: transparent; cursor: pointer; color: #999; padding: 5px;"><i data-lucide="more-vertical" style="width: 16px; height: 16px;"></i></button><div class="cat-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; min-width: 120px; overflow: hidden;"><button class="rename-cat-btn" style="width: 100%; text-align: left; padding: 10px 15px; border: none; background: white; cursor: pointer; font-size: 0.85rem;">Rename</button><button class="delete-cat-btn" style="width: 100%; text-align: left; padding: 10px 15px; border: none; background: white; cursor: pointer; font-size: 0.85rem; color: red;">Delete</button></div></div>`;
             const menuBtn = el.querySelector('.cat-menu-btn'); const dropdown = el.querySelector('.cat-dropdown');
             menuBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.cat-dropdown').forEach(d => { if(d !== dropdown) d.style.display = 'none'; }); dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none'; });
-            el.querySelector('.rename-cat-btn').addEventListener('click', async (e) => { e.stopPropagation(); dropdown.style.display = 'none'; const newName = prompt('Enter new module name:', cat.name); if(newName && newName !== cat.name) { const res = await fetch('../api/courses.php?type=categories', { method: 'PUT', body: JSON.stringify(data) }); if(res.ok) { if(selectedCategory?.id == cat.id) selectedCategory.name = newName; loadCategories(); } } });
+            el.querySelector('.rename-cat-btn').addEventListener('click', async (e) => { e.stopPropagation(); dropdown.style.display = 'none'; const newName = prompt('Enter new module name:', cat.name); if(newName && newName !== cat.name) { const res = await fetch('../api/courses.php?type=categories', { method: 'PUT', body: JSON.stringify({id: cat.id, name: newName}) }); if(res.ok) { if(selectedCategory?.id == cat.id) selectedCategory.name = newName; loadCategories(); } } });
             el.querySelector('.delete-cat-btn').addEventListener('click', async (e) => { e.stopPropagation(); dropdown.style.display = 'none'; if(confirm(`Are you sure you want to delete "${cat.name}" and all its activities?`)) { const res = await fetch(`../api/courses.php?type=categories&id=${cat.id}`, { method: 'DELETE' }); if(res.ok) { if(selectedCategory?.id == cat.id) { selectedCategory = null; document.getElementById('no-category-selected').style.display = 'block'; document.getElementById('category-details').style.display = 'none'; } loadCategories(); } } });
             el.addEventListener('click', (e) => { if(e.target.closest('.category-options')) return; selectedCategory = cat; loadCategories(); openActivityManager(); });
             list.appendChild(el);
         });
         if(typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function openActivityManager() {
+        const noCatMsg = document.getElementById('no-category-selected');
+        const catDetails = document.getElementById('category-details');
+        const catNameEl = document.getElementById('current-category-name');
+        
+        if(noCatMsg) noCatMsg.style.display = 'none';
+        if(catDetails) catDetails.style.display = 'block';
+        if(catNameEl) catNameEl.textContent = selectedCategory.name;
+        loadCurriculumItems();
     }
 
     // --- Student Actions ---
@@ -282,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`../api/courses.php?type=enrollments&student_id=${currentUser.id}`);
         const enrolled = await res.json();
         const list = document.getElementById('enrolled-courses-list'); if(!list || !Array.isArray(enrolled)) return;
-        list.innerHTML = enrolled.length ? '' : '<p style="color: #999; font-size: 0.85rem; text-align: center; padding: 1rem;">Explore the catalog to start learning!</p>';
+        list.innerHTML = enrolled.length ? '' : '<p style="color: #999; font-size: 0.9rem; text-align: center; padding: 1rem;">Explore the catalog to start learning!</p>';
         enrolled.forEach(c => {
             const el = document.createElement('div'); el.className = 'enrolled-item'; el.style.padding = '0.8rem 1rem'; el.style.borderRadius = '12px'; el.style.background = '#f8faff'; el.style.border = '1px solid #eef2ff'; el.style.cursor = 'pointer'; el.style.transition = 'all 0.2s ease';
             el.innerHTML = `<h5 style="margin-bottom: 2px; color: #333; font-size: 0.9rem;">${c.title}</h5><p style="font-size: 0.75rem; color: #666;">${c.instructor_name}</p>`;
@@ -321,7 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalContainer.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><span style="font-weight: 700; font-size: 0.85rem; color: #666; text-transform: uppercase;">Total Progress</span><span style="font-weight: 800; font-size: 1.1rem; color: var(--secondary-color);">${totalPerc}%</span></div><div style="height: 10px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);"><div style="height: 100%; width: ${totalPerc}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div></div>`;
                 learningCategoriesList.appendChild(totalContainer);
                 
-                // Add discreet Unenroll Button outside the progress div
                 const unenrollContainer = document.createElement('div'); unenrollContainer.style.marginTop = '1.5rem'; unenrollContainer.style.textAlign = 'center';
                 unenrollContainer.innerHTML = `<button id="student-unenroll-trigger" style="background: none; border: none; color: #999; font-size: 0.75rem; cursor: pointer; text-decoration: underline; transition: color 0.2s;">Leave this course</button><div id="unenroll-confirm-pane" style="display: none; margin-top: 10px; padding: 12px; background: #fff5f5; border-radius: 10px; border: 1px solid #ffe3e3;"><p style="font-size: 0.75rem; color: #c53030; margin-bottom: 8px; font-weight: 600;">Are you sure? All progress will be lost.</p><div style="display: flex; gap: 10px; justify-content: center;"><button id="final-unenroll-btn" style="background: #e53e3e; color: white; border: none; padding: 5px 12px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">Yes, Leave</button><button id="cancel-unenroll-btn" style="background: #edf2f7; color: #4a5568; border: none; padding: 5px 12px; border-radius: 5px; font-size: 0.7rem; cursor: pointer;">Cancel</button></div></div>`;
                 learningCategoriesList.appendChild(unenrollContainer);
@@ -353,14 +463,18 @@ document.addEventListener('DOMContentLoaded', () => {
             materials.forEach(mat => {
                 const isViewed = parseInt(mat.is_viewed) > 0; const card = document.createElement('div'); card.className = 'course-card'; card.style.padding = '1.2rem'; card.style.borderLeft = `4px solid ${isViewed ? '#2ecc71' : '#eee'}`;
                 card.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" class="item-header"><div style="display: flex; align-items: center; gap: 12px;"><i data-lucide="${isViewed ? 'check-circle' : 'file-text'}" style="width: 20px; color: ${isViewed ? '#2ecc71' : '#999'}"></i><strong style="color: ${isViewed ? '#27ae60' : '#333'};">${mat.title}</strong></div><i data-lucide="chevron-down" class="dropdown-icon" style="width: 16px;"></i></div><div class="item-body" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">${mat.description || ''}</p>${getPreviewHTML(mat.url, mat.material_type)}<div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">${isViewed ? '<span style="color: #2ecc71; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;"><i data-lucide="check" style="width:16px;"></i> Viewed</span>' : `<button class="btn btn-primary mark-viewed-btn" data-id="${mat.id}" style="padding: 0.6rem 1.2rem; font-size: 0.85rem; background: #2ecc71; border-color: #2ecc71;">Mark as Viewed</button>`}</div></div>`;
-                card.querySelector('.item-header').addEventListener('click', () => { const body = card.querySelector('.item-body'); const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
+                const body = card.querySelector('.item-body');
+                body.appendChild(createCommentSection(mat.id, 'material'));
+                card.querySelector('.item-header').addEventListener('click', () => { const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
                 if(!isViewed) { card.querySelector('.mark-viewed-btn').addEventListener('click', async (e) => { const res = await fetch('../api/courses.php?type=material_views', { method: 'POST', body: JSON.stringify({ material_id: mat.id, student_id: currentUser.id }) }); if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } }); }
                 learningCurriculumItems.appendChild(card);
             });
             activities.forEach(act => {
                 const isDone = parseInt(act.is_done) > 0; const card = document.createElement('div'); card.className = 'course-card'; card.style.padding = '1.2rem'; card.style.borderLeft = `4px solid ${isDone ? '#2ecc71' : 'var(--secondary-color)'}`;
                 card.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" class="item-header"><div style="display: flex; align-items: center; gap: 12px;"><i data-lucide="${isDone ? 'check-circle' : 'activity'}" style="width: 20px; color: ${isDone ? '#2ecc71' : 'var(--secondary-color)'}"></i><strong style="color: ${isDone ? '#27ae60' : '#333'};">${act.title}</strong></div><i data-lucide="chevron-down" class="dropdown-icon" style="width: 16px;"></i></div><div class="item-body" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">${act.description || ''}</p>${getPreviewHTML(act.content_url, 'google_form')}<div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">${isDone ? '<span style="color: #2ecc71; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;"><i data-lucide="check" style="width:16px;"></i> Completed</span>' : `<button class="btn btn-primary mark-done-btn" data-id="${act.id}" style="padding: 0.6rem 1.2rem; font-size: 0.85rem;">Mark as Done</button>`}</div></div>`;
-                card.querySelector('.item-header').addEventListener('click', () => { const body = card.querySelector('.item-body'); const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
+                const body = card.querySelector('.item-body');
+                body.appendChild(createCommentSection(act.id, 'activity'));
+                card.querySelector('.item-header').addEventListener('click', () => { const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
                 if(!isDone) { card.querySelector('.mark-done-btn').addEventListener('click', async (e) => { const res = await fetch('../api/courses.php?type=submissions', { method: 'POST', body: JSON.stringify({ activity_id: act.id, student_id: currentUser.id }) }); if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } }); }
                 learningCurriculumItems.appendChild(card);
             });
@@ -420,8 +534,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const container = document.createElement('div'); container.style.marginBottom = '10px';
                     const card = document.createElement('div'); card.className = 'course-card'; card.style.padding = '1rem'; card.style.borderLeft = '4px solid #2ecc71'; card.style.cursor = 'pointer';
                     card.innerHTML = `<div class="card-main-header" style="display: flex; justify-content: space-between; align-items: center;"><strong style="color: #27ae60;">${mat.title}</strong><div style="display: flex; gap: 10px; align-items: center;"><button class="edit-mat-btn" style="border: none; background: transparent; cursor: pointer; color: #999; padding: 5px;"><i data-lucide="pencil" style="width: 16px; height: 16px;"></i></button><i data-lucide="chevron-down" class="dropdown-icon" style="transition: transform 0.3s ease;"></i></div></div><div class="edit-mode" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><form class="inline-edit-form"><div class="form-group"><label>Title</label><input type="text" value="${mat.title}" class="edit-title" required></div><div class="form-group"><label>URL</label><input type="url" value="${mat.url}" class="edit-url" required></div><div class="form-group"><label>Description</label><textarea class="edit-desc" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; height: 80px;">${mat.description || ''}</textarea></div><div class="form-group"><label>Type</label><select class="edit-type" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd;"><option value="link" ${mat.material_type === 'link' ? 'selected' : ''}>Link</option><option value="pdf" ${mat.material_type === 'pdf' ? 'selected' : ''}>PDF</option><option value="video" ${mat.material_type === 'video' ? 'selected' : ''}>Video</option></select></div><div style="display: flex; gap: 10px;"><button type="submit" class="btn btn-primary" style="flex: 1; font-size: 0.8rem; background: #27ae60;">Save</button><button type="button" class="cancel-edit btn btn-outline" style="flex: 1; font-size: 0.8rem;">Cancel</button></div></form></div><div class="preview-content" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><p style="font-size: 0.85rem; color: #666; margin-bottom: 1rem;">${mat.description || 'No description provided.'}</p>${getPreviewHTML(mat.url, mat.material_type)}</div>`;
-                    card.addEventListener('click', (e) => { if(e.target.closest('.edit-mat-btn') || e.target.closest('.edit-mode')) return; const preview = card.querySelector('.preview-content'); const icon = card.querySelector('.dropdown-icon'); const isOpen = preview.style.display === 'block'; preview.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)'; });
-                    card.querySelector('.edit-mat-btn').addEventListener('click', (e) => { e.stopPropagation(); card.querySelector('.edit-mode').style.display = 'block'; card.querySelector('.preview-content').style.display = 'none'; });
+                    const preview = card.querySelector('.preview-content');
+                    preview.appendChild(createCommentSection(mat.id, 'material'));
+                    
+                    card.addEventListener('click', (e) => { 
+                        if(e.target.closest('.edit-mat-btn') || e.target.closest('.edit-mode') || e.target.closest('.comment-section')) return; 
+                        const icon = card.querySelector('.dropdown-icon'); 
+                        const isOpen = preview.style.display === 'block'; 
+                        preview.style.display = isOpen ? 'none' : 'block'; 
+                        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)'; 
+                    });
+                    
+                    card.querySelector('.edit-mat-btn').addEventListener('click', (e) => { e.stopPropagation(); card.querySelector('.edit-mode').style.display = 'block'; preview.style.display = 'none'; });
                     card.querySelector('.cancel-edit').addEventListener('click', (e) => { e.stopPropagation(); card.querySelector('.edit-mode').style.display = 'none'; });
                     card.querySelector('.inline-edit-form').addEventListener('submit', async (e) => { e.preventDefault(); const data = { id: mat.id, title: card.querySelector('.edit-title').value, url: card.querySelector('.edit-url').value, description: card.querySelector('.edit-desc').value, material_type: card.querySelector('.edit-type').value }; const response = await fetch('../api/courses.php?type=materials', { method: 'PUT', body: JSON.stringify(data) }); if(response.ok) loadCurriculumItems(); });
                     container.appendChild(card); list.appendChild(container);
@@ -433,8 +557,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const container = document.createElement('div'); container.style.marginBottom = '10px';
                     const el = document.createElement('div'); el.className = 'course-card'; el.style.padding = '1rem'; el.style.borderLeft = '4px solid var(--secondary-color)'; el.style.cursor = 'pointer';
                     el.innerHTML = `<div class="card-main-header" style="display: flex; justify-content: space-between; align-items: center;"><div><strong>${act.title}</strong><span style="font-size: 0.65rem; color: #999; margin-left: 10px;">Google Form</span></div><div style="display: flex; gap: 10px; align-items: center;"><button class="edit-act-btn" style="border: none; background: transparent; cursor: pointer; color: #999; padding: 5px;"><i data-lucide="pencil" style="width: 16px; height: 16px;"></i></button><i data-lucide="chevron-down" class="dropdown-icon" style="transition: transform 0.3s ease;"></i></div></div><div class="edit-mode" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><form class="inline-edit-act-form"><div class="form-group"><label>Title</label><input type="text" value="${act.title}" class="edit-title" required></div><div class="form-group"><label>Google Form Link</label><input type="url" value="${act.content_url || ''}" class="edit-url" required></div><div style="display: grid; grid-template-columns: 1fr 3fr; gap: 1rem;"><div class="form-group"><label>Seq #</label><input type="number" value="${act.sequence_number ?? 0}" class="edit-seq" style="width: 100%;"></div><div class="form-group"><label>Description</label><input type="text" value="${act.description || ''}" class="edit-desc" style="width: 100%;"></div></div><div style="display: flex; gap: 10px;"><button type="submit" class="btn btn-primary" style="flex: 1; font-size: 0.8rem;">Save Changes</button><button type="button" class="cancel-edit-act btn btn-outline" style="flex: 1; font-size: 0.8rem;">Cancel</button></div></form></div><div class="preview-content" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><p style="font-size: 0.85rem; color: #666; margin-bottom: 1rem;">${act.description || 'Follow the link below to complete the activity.'}</p>${getPreviewHTML(act.content_url, 'google_form')}</div>`;
-                    el.addEventListener('click', (e) => { if(e.target.closest('.edit-act-btn') || e.target.closest('.edit-mode')) return; const preview = el.querySelector('.preview-content'); const icon = el.querySelector('.dropdown-icon'); const isOpen = preview.style.display === 'block'; preview.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)'; });
-                    el.querySelector('.edit-act-btn').addEventListener('click', (e) => { e.stopPropagation(); el.querySelector('.edit-mode').style.display = 'block'; el.querySelector('.preview-content').style.display = 'none'; });
+                    const preview = el.querySelector('.preview-content');
+                    preview.appendChild(createCommentSection(act.id, 'activity'));
+                    
+                    el.addEventListener('click', (e) => { 
+                        if(e.target.closest('.edit-act-btn') || e.target.closest('.edit-mode') || e.target.closest('.comment-section')) return; 
+                        const icon = el.querySelector('.dropdown-icon'); 
+                        const isOpen = preview.style.display === 'block'; 
+                        preview.style.display = isOpen ? 'none' : 'block'; 
+                        icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)'; 
+                    });
+                    
+                    el.querySelector('.edit-act-btn').addEventListener('click', (e) => { e.stopPropagation(); el.querySelector('.edit-mode').style.display = 'block'; preview.style.display = 'none'; });
                     el.querySelector('.cancel-edit-act').addEventListener('click', (e) => { e.stopPropagation(); el.querySelector('.edit-mode').style.display = 'none'; });
                     el.querySelector('.inline-edit-act-form').addEventListener('submit', async (e) => { e.preventDefault(); const data = { id: act.id, title: el.querySelector('.edit-title').value, content_url: el.querySelector('.edit-url').value, sequence_number: el.querySelector('.edit-seq').value || 0, description: el.querySelector('.edit-desc').value, activity_type: 'google_form' }; const response = await fetch('../api/courses.php?type=activities', { method: 'PUT', body: JSON.stringify(data) }); if(response.ok) loadCurriculumItems(); });
                     container.appendChild(el); list.appendChild(container);
