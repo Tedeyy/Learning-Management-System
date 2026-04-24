@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addCategoryForm = document.getElementById('add-category-form');
     const addActivityForm = document.getElementById('add-activity-form');
     const addMaterialForm = document.getElementById('add-material-form');
+    const searchInput = document.getElementById('course-search');
 
     // Learning View Elements
     const learningCategoriesList = document.getElementById('learning-categories-list');
@@ -229,29 +230,14 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch(`../api/courses.php?type=student_progress&student_id=${userId}&course_id=${selectedCourse.id}`);
             const progress = await res.json();
-            
             instructorModalContent.innerHTML = `<h2 style="margin-bottom: 0.5rem;">${userName}'s Progress</h2><p style="color: #666; margin-bottom: 2rem;">Current standing in <strong>${selectedCourse.title}</strong></p><div id="progress-bars-list" style="display: grid; gap: 1.5rem;"></div>`;
             const list = instructorModalContent.querySelector('#progress-bars-list');
-            
             progress.forEach(p => {
                 const total = parseInt(p.total_acts) + parseInt(p.total_mats);
                 const done = parseInt(p.done_acts) + parseInt(p.viewed_mats);
                 const perc = total > 0 ? Math.round((done/total)*100) : 0;
-                
                 const el = document.createElement('div');
-                el.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <span style="font-weight: 600; font-size: 0.9rem; color: #333;">${p.name}</span>
-                        <span style="font-size: 0.8rem; font-weight: 700; color: ${perc === 100 ? '#2ecc71' : '#666'};">${perc}%</span>
-                    </div>
-                    <div style="height: 8px; width: 100%; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
-                        <div style="height: 100%; width: ${perc}%; background: ${perc === 100 ? '#2ecc71' : 'var(--primary-color)'}; transition: width 0.8s ease;"></div>
-                    </div>
-                    <div style="display: flex; gap: 10px; margin-top: 5px; font-size: 0.7rem; color: #999;">
-                        <span><i data-lucide="check-circle" style="width: 10px; vertical-align: middle;"></i> ${p.done_acts}/${p.total_acts} Activities</span>
-                        <span><i data-lucide="file-text" style="width: 10px; vertical-align: middle;"></i> ${p.viewed_mats}/${p.total_mats} Materials</span>
-                    </div>
-                `;
+                el.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><span style="font-weight: 600; font-size: 0.9rem; color: #333;">${p.name}</span><span style="font-size: 0.8rem; font-weight: 700; color: ${perc === 100 ? '#2ecc71' : '#666'};">${perc}%</span></div><div style="height: 8px; width: 100%; background: #f0f0f0; border-radius: 10px; overflow: hidden;"><div style="height: 100%; width: ${perc}%; background: ${perc === 100 ? '#2ecc71' : 'var(--primary-color)'}; transition: width 0.8s ease;"></div></div><div style="display: flex; gap: 10px; margin-top: 5px; font-size: 0.7rem; color: #999;"><span><i data-lucide="check-circle" style="width: 10px; vertical-align: middle;"></i> ${p.done_acts}/${p.total_acts} Activities</span><span><i data-lucide="file-text" style="width: 10px; vertical-align: middle;"></i> ${p.viewed_mats}/${p.total_mats} Materials</span></div>`;
                 list.appendChild(el);
             });
             if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -265,40 +251,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if(closeInstructorModal) {
-        closeInstructorModal.addEventListener('click', () => { instructorModalOverlay.style.display = 'none'; });
-    }
+    if(closeInstructorModal) { closeInstructorModal.addEventListener('click', () => { instructorModalOverlay.style.display = 'none'; }); }
     instructorModalOverlay.addEventListener('click', (e) => { if(e.target === instructorModalOverlay) instructorModalOverlay.style.display = 'none'; });
 
-    // --- Curriculum & Course Loading (Unchanged) ---
-    // ... (rest of the file remains as it was) ...
-
     document.getElementById('back-to-courses').addEventListener('click', (e) => {
-        e.preventDefault();
-        instructorCoursesSection.style.display = 'block';
-        courseManagerSection.style.display = 'none';
-        breadcrumb.style.display = 'none';
-        selectedCourse = null;
-        selectedCategory = null;
-        loadInstructorCourses();
+        e.preventDefault(); instructorCoursesSection.style.display = 'block'; courseManagerSection.style.display = 'none'; breadcrumb.style.display = 'none'; selectedCourse = null; selectedCategory = null; loadInstructorCourses();
     });
 
     async function loadCategories() {
         const response = await fetch(`../api/courses.php?type=categories&course_id=${selectedCourse.id}`);
         const categories = await response.json();
-        const list = document.getElementById('categories-list');
-        if(!list || !Array.isArray(categories)) return;
+        const list = document.getElementById('categories-list'); if(!list || !Array.isArray(categories)) return;
         list.innerHTML = '';
         categories.forEach(cat => {
-            const el = document.createElement('div');
-            el.className = `category-item ${selectedCategory?.id == cat.id ? 'active' : ''}`;
-            el.style.padding = '1rem'; el.style.cursor = 'pointer'; el.style.borderRadius = '10px';
-            el.style.marginBottom = '5px'; el.style.background = selectedCategory?.id == cat.id ? '#f0f4ff' : 'transparent';
-            el.style.display = 'flex'; el.style.justifyContent = 'space-between'; el.style.alignItems = 'center';
+            const el = document.createElement('div'); el.className = `category-item ${selectedCategory?.id == cat.id ? 'active' : ''}`; el.style.padding = '1rem'; el.style.cursor = 'pointer'; el.style.borderRadius = '10px'; el.style.marginBottom = '5px'; el.style.background = selectedCategory?.id == cat.id ? '#f0f4ff' : 'transparent'; el.style.display = 'flex'; el.style.justifyContent = 'space-between'; el.style.alignItems = 'center';
             el.innerHTML = `<span style="font-weight: 500;">${cat.name}</span><div class="category-options" style="position: relative;"><button class="cat-menu-btn" style="border: none; background: transparent; cursor: pointer; color: #999; padding: 5px;"><i data-lucide="more-vertical" style="width: 16px; height: 16px;"></i></button><div class="cat-dropdown" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #eee; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 100; min-width: 120px; overflow: hidden;"><button class="rename-cat-btn" style="width: 100%; text-align: left; padding: 10px 15px; border: none; background: white; cursor: pointer; font-size: 0.85rem;">Rename</button><button class="delete-cat-btn" style="width: 100%; text-align: left; padding: 10px 15px; border: none; background: white; cursor: pointer; font-size: 0.85rem; color: red;">Delete</button></div></div>`;
             const menuBtn = el.querySelector('.cat-menu-btn'); const dropdown = el.querySelector('.cat-dropdown');
             menuBtn.addEventListener('click', (e) => { e.stopPropagation(); document.querySelectorAll('.cat-dropdown').forEach(d => { if(d !== dropdown) d.style.display = 'none'; }); dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none'; });
-            el.querySelector('.rename-cat-btn').addEventListener('click', async (e) => { e.stopPropagation(); dropdown.style.display = 'none'; const newName = prompt('Enter new module name:', cat.name); if(newName && newName !== cat.name) { const res = await fetch('../api/courses.php?type=categories', { method: 'PUT', body: JSON.stringify({ id: cat.id, name: newName }) }); if(res.ok) { if(selectedCategory?.id == cat.id) selectedCategory.name = newName; loadCategories(); } } });
+            el.querySelector('.rename-cat-btn').addEventListener('click', async (e) => { e.stopPropagation(); dropdown.style.display = 'none'; const newName = prompt('Enter new module name:', cat.name); if(newName && newName !== cat.name) { const res = await fetch('../api/courses.php?type=categories', { method: 'PUT', body: JSON.stringify(data) }); if(res.ok) { if(selectedCategory?.id == cat.id) selectedCategory.name = newName; loadCategories(); } } });
             el.querySelector('.delete-cat-btn').addEventListener('click', async (e) => { e.stopPropagation(); dropdown.style.display = 'none'; if(confirm(`Are you sure you want to delete "${cat.name}" and all its activities?`)) { const res = await fetch(`../api/courses.php?type=categories&id=${cat.id}`, { method: 'DELETE' }); if(res.ok) { if(selectedCategory?.id == cat.id) { selectedCategory = null; document.getElementById('no-category-selected').style.display = 'block'; document.getElementById('category-details').style.display = 'none'; } loadCategories(); } } });
             el.addEventListener('click', (e) => { if(e.target.closest('.category-options')) return; selectedCategory = cat; loadCategories(); openActivityManager(); });
             list.appendChild(el);
@@ -306,15 +276,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof lucide !== 'undefined') lucide.createIcons();
     }
 
-    document.addEventListener('click', () => { document.querySelectorAll('.cat-dropdown').forEach(d => d.style.display = 'none'); });
-
     // --- Student Actions ---
 
     async function loadEnrolledCourses() {
         const res = await fetch(`../api/courses.php?type=enrollments&student_id=${currentUser.id}`);
         const enrolled = await res.json();
-        const list = document.getElementById('enrolled-courses-list');
-        if(!list || !Array.isArray(enrolled)) return;
+        const list = document.getElementById('enrolled-courses-list'); if(!list || !Array.isArray(enrolled)) return;
         list.innerHTML = enrolled.length ? '' : '<p style="color: #999; font-size: 0.85rem; text-align: center; padding: 1rem;">Explore the catalog to start learning!</p>';
         enrolled.forEach(c => {
             const el = document.createElement('div'); el.className = 'enrolled-item'; el.style.padding = '0.8rem 1rem'; el.style.borderRadius = '12px'; el.style.background = '#f8faff'; el.style.border = '1px solid #eef2ff'; el.style.cursor = 'pointer'; el.style.transition = 'all 0.2s ease';
@@ -353,6 +320,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const totalPerc = Math.round((totalCompleted/totalItems)*100); const totalContainer = document.createElement('div'); totalContainer.style.marginTop = '2rem'; totalContainer.style.paddingTop = '1.5rem'; totalContainer.style.borderTop = '1px solid #eee';
                 totalContainer.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><span style="font-weight: 700; font-size: 0.85rem; color: #666; text-transform: uppercase;">Total Progress</span><span style="font-weight: 800; font-size: 1.1rem; color: var(--secondary-color);">${totalPerc}%</span></div><div style="height: 10px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);"><div style="height: 100%; width: ${totalPerc}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div></div>`;
                 learningCategoriesList.appendChild(totalContainer);
+                
+                // Add discreet Unenroll Button outside the progress div
+                const unenrollContainer = document.createElement('div'); unenrollContainer.style.marginTop = '1.5rem'; unenrollContainer.style.textAlign = 'center';
+                unenrollContainer.innerHTML = `<button id="student-unenroll-trigger" style="background: none; border: none; color: #999; font-size: 0.75rem; cursor: pointer; text-decoration: underline; transition: color 0.2s;">Leave this course</button><div id="unenroll-confirm-pane" style="display: none; margin-top: 10px; padding: 12px; background: #fff5f5; border-radius: 10px; border: 1px solid #ffe3e3;"><p style="font-size: 0.75rem; color: #c53030; margin-bottom: 8px; font-weight: 600;">Are you sure? All progress will be lost.</p><div style="display: flex; gap: 10px; justify-content: center;"><button id="final-unenroll-btn" style="background: #e53e3e; color: white; border: none; padding: 5px 12px; border-radius: 5px; font-size: 0.7rem; font-weight: 700; cursor: pointer;">Yes, Leave</button><button id="cancel-unenroll-btn" style="background: #edf2f7; color: #4a5568; border: none; padding: 5px 12px; border-radius: 5px; font-size: 0.7rem; cursor: pointer;">Cancel</button></div></div>`;
+                learningCategoriesList.appendChild(unenrollContainer);
+
+                const trigger = unenrollContainer.querySelector('#student-unenroll-trigger');
+                const pane = unenrollContainer.querySelector('#unenroll-confirm-pane');
+                trigger.addEventListener('click', () => { trigger.style.display = 'none'; pane.style.display = 'block'; });
+                unenrollContainer.querySelector('#cancel-unenroll-btn').addEventListener('click', () => { trigger.style.display = 'inline'; pane.style.display = 'none'; });
+                unenrollContainer.querySelector('#final-unenroll-btn').addEventListener('click', async () => {
+                    const res = await fetch(`../api/courses.php?type=enrollments&course_id=${selectedCourse.id}&student_id=${currentUser.id}`, { method: 'DELETE' });
+                    if(res.ok) { selectedCourse = null; selectedCategory = null; switchView(studentDashboard); loadStudentCourses(); loadEnrolledCourses(); }
+                });
             }
         } catch (error) { learningCategoriesList.innerHTML = `<p style="padding: 1rem; color: #ff4d4d;">System Error.</p>`; }
     }
@@ -396,10 +377,13 @@ document.addEventListener('DOMContentLoaded', () => {
         grid.innerHTML = courses.length ? '' : '<p style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #999;">No courses found matching your search.</p>';
         courses.forEach(c => {
             const container = document.createElement('div'); container.className = 'course-card'; container.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; container.style.cursor = 'pointer'; container.style.overflow = 'hidden';
-            const isEnrolled = parseInt(c.is_enrolled) > 0;
-            container.innerHTML = `<div class="card-header" style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;"><div><h3 style="margin-bottom: 0.2rem; color: var(--secondary-color);">${c.title}</h3><p style="font-size: 0.85rem; color: #666;">By: ${c.instructor_name}</p></div><div style="display: flex; align-items: center; gap: 10px;">${isEnrolled ? '<span style="color: #2ecc71; font-size: 0.75rem; font-weight: 600; background: #e7f7ed; padding: 4px 8px; border-radius: 5px;">Enrolled</span>' : ''}<i data-lucide="chevron-down" class="dropdown-icon" style="transition: transform 0.3s ease;"></i></div></div><div class="card-details" style="display: none; padding: 0 1.5rem 1.5rem; border-top: 1px solid #f0f0f0; background: #fafafa;"><div style="padding-top: 1.5rem;"><h5 style="margin-bottom: 0.5rem; color: #333;">About this Course</h5><p style="font-size: 0.9rem; color: #555; line-height: 1.6; margin-bottom: 1.5rem;">${c.description}</p><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem;"><div style="background: #e8f0fe; color: var(--primary-color); padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;"><i data-lucide="clock" style="width: 14px; margin-right: 5px; vertical-align: middle;"></i> Self-Paced</div><div style="background: #e7f7ed; color: #2ecc71; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;"><i data-lucide="book-open" style="width: 14px; margin-right: 5px; vertical-align: middle;"></i> Lifetime Access</div></div>${isEnrolled ? `<button class="btn btn-primary go-to-course-btn" style="width: 100%; padding: 1rem; font-weight: 600; font-size: 1rem; background: #2ecc71; border-color: #2ecc71;">Go to Course</button>` : `<button class="btn btn-primary enroll-btn" data-id="${c.id}" style="width: 100%; padding: 1rem; font-weight: 600; font-size: 1rem; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);">Enrol Now</button>`}</div></div>`;
-            container.addEventListener('click', (e) => { if(e.target.closest('.enroll-btn') || e.target.closest('.go-to-course-btn')) return; const details = container.querySelector('.card-details'); const icon = container.querySelector('.dropdown-icon'); const isOpen = details.style.display === 'block'; details.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)'; container.style.boxShadow = isOpen ? '' : '0 10px 25px rgba(0,0,0,0.1)'; container.style.transform = isOpen ? '' : 'translateY(-2px)'; });
-            if(!isEnrolled) { container.querySelector('.enroll-btn').addEventListener('click', async (e) => { e.stopPropagation(); const courseId = e.target.dataset.id; const res = await fetch('../api/courses.php?type=enrollments', { method: 'POST', body: JSON.stringify({ course_id: courseId, student_id: currentUser.id }) }); if(res.ok) { alert(`Successfully enrolled in ${c.title}!`); loadStudentCourses(searchInput.value); loadEnrolledCourses(); } }); } else { container.querySelector('.go-to-course-btn').addEventListener('click', (e) => { e.stopPropagation(); openLearningView({ id: c.id, title: c.title }); }); }
+            container.innerHTML = `<div class="card-header" style="padding: 1.5rem; display: flex; justify-content: space-between; align-items: center;"><div><h3 style="margin-bottom: 0.2rem; color: var(--secondary-color);">${c.title}</h3><p style="font-size: 0.85rem; color: #666;">By: ${c.instructor_name}</p></div><i data-lucide="chevron-down" class="dropdown-icon" style="transition: transform 0.3s ease;"></i></div><div class="card-details" style="display: none; padding: 0 1.5rem 1.5rem; border-top: 1px solid #f0f0f0; background: #fafafa;"><div style="padding-top: 1.5rem;"><h5 style="margin-bottom: 0.5rem; color: #333;">About this Course</h5><p style="font-size: 0.9rem; color: #555; line-height: 1.6; margin-bottom: 1.5rem;">${c.description}</p><div style="display: flex; align-items: center; gap: 15px; margin-bottom: 1.5rem;"><div style="background: #e8f0fe; color: var(--primary-color); padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;"><i data-lucide="clock" style="width: 14px; margin-right: 5px; vertical-align: middle;"></i> Self-Paced</div><div style="background: #e7f7ed; color: #2ecc71; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: 600;"><i data-lucide="book-open" style="width: 14px; margin-right: 5px; vertical-align: middle;"></i> Lifetime Access</div></div><button class="btn btn-primary enroll-btn" data-id="${c.id}" style="width: 100%; padding: 1rem; font-weight: 600; font-size: 1rem; box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);">Enrol Now</button></div></div>`;
+            container.addEventListener('click', (e) => { if(e.target.closest('.enroll-btn')) return; const details = container.querySelector('.card-details'); const icon = container.querySelector('.dropdown-icon'); const isOpen = details.style.display === 'block'; details.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(180deg)'; container.style.boxShadow = isOpen ? '' : '0 10px 25px rgba(0,0,0,0.1)'; container.style.transform = isOpen ? '' : 'translateY(-2px)'; });
+            container.querySelector('.enroll-btn').addEventListener('click', async (e) => {
+                e.stopPropagation(); const courseId = e.target.dataset.id;
+                const res = await fetch('../api/courses.php?type=enrollments', { method: 'POST', body: JSON.stringify({ course_id: courseId, student_id: currentUser.id }) });
+                if(res.ok) { alert(`Successfully enrolled in ${c.title}!`); loadStudentCourses(searchInput ? searchInput.value : ''); loadEnrolledCourses(); }
+            });
             grid.appendChild(container);
         });
         if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -459,7 +443,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(typeof lucide !== 'undefined') lucide.createIcons();
         } catch (error) {}
     }
-
     document.getElementById('show-add-activity').addEventListener('click', () => { document.getElementById('add-activity-container').style.display = 'block'; document.getElementById('add-material-container').style.display = 'none'; });
     document.getElementById('cancel-activity').addEventListener('click', () => { document.getElementById('add-activity-container').style.display = 'none'; });
     document.getElementById('show-add-material').addEventListener('click', () => { document.getElementById('add-material-container').style.display = 'block'; document.getElementById('add-activity-container').style.display = 'none'; });

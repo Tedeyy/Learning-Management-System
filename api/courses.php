@@ -30,11 +30,27 @@ try {
             if ($student_id) { $query .= ", (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND student_id = :sid) as is_enrolled"; }
             $query .= " FROM courses c JOIN users u ON c.instructor_id = u.id";
             
+            $where = [];
             $params = [];
-            if ($instructor_id) { $query .= " WHERE c.instructor_id = :instructor_id"; $params[':instructor_id'] = $instructor_id; }
-            elseif ($search) { $query .= " WHERE c.title LIKE :search OR c.description LIKE :search"; $params[':search'] = "%$search%"; }
             
-            if ($student_id) { $params[':sid'] = $student_id; }
+            if ($instructor_id) { 
+                $where[] = "c.instructor_id = :instructor_id"; 
+                $params[':instructor_id'] = $instructor_id; 
+            }
+            
+            if ($search) { 
+                $where[] = "(c.title LIKE :search OR c.description LIKE :search)"; 
+                $params[':search'] = "%$search%"; 
+            }
+            
+            if ($student_id && !$instructor_id) {
+                $where[] = "c.id NOT IN (SELECT course_id FROM enrollments WHERE student_id = :sid)";
+                $params[':sid'] = $student_id;
+            }
+            
+            if (count($where) > 0) {
+                $query .= " WHERE " . implode(" AND ", $where);
+            }
             
             $query .= " ORDER BY c.created_at DESC";
             $stmt = $db->prepare($query);
@@ -123,7 +139,6 @@ try {
             $student_id = $_GET['student_id'] ?? null;
             $course_id = $_GET['course_id'] ?? null;
             
-            // Get Modules with progress for this specific student
             $query = "SELECT ac.id, ac.name,
                         (SELECT COUNT(*) FROM activities WHERE category_id = ac.id) as total_acts,
                         (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_mats,
@@ -233,11 +248,27 @@ try {
         if ($type === 'enrollments') {
             $course_id = $_GET['course_id'] ?? null;
             $student_id = $_GET['student_id'] ?? null;
+            
+            // Delete submissions for this student in this course
+            $q1 = "DELETE FROM submissions WHERE student_id = :sid AND activity_id IN (SELECT id FROM activities WHERE course_id = :cid)";
+            $s1 = $db->prepare($q1);
+            $s1->bindValue(":sid", $student_id);
+            $s1->bindValue(":cid", $course_id);
+            $s1->execute();
+            
+            // Delete material views for this student in this course
+            $q2 = "DELETE FROM material_views WHERE student_id = :sid AND material_id IN (SELECT id FROM learning_materials WHERE course_id = :cid)";
+            $s2 = $db->prepare($q2);
+            $s2->bindValue(":sid", $student_id);
+            $s2->bindValue(":cid", $course_id);
+            $s2->execute();
+            
+            // Delete the enrollment itself
             $query = "DELETE FROM enrollments WHERE course_id = :cid AND student_id = :sid";
             $stmt = $db->prepare($query);
             $stmt->bindValue(":cid", $course_id);
             $stmt->bindValue(":sid", $student_id);
-            if ($stmt->execute()) { echo json_encode(["message" => "Student unenrolled"]); }
+            if ($stmt->execute()) { echo json_encode(["message" => "Student unenrolled and progress cleared"]); }
         } elseif ($type === 'categories') {
             $id = $_GET['id'] ?? null;
             $query = "DELETE FROM activity_categories WHERE id = :id";
