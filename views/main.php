@@ -9,6 +9,8 @@
         <h2>Welcome Back</h2>
         <p>Login to your account to continue your learning journey.</p>
         
+        <div id="login-message" style="margin-bottom: 1rem; text-align: center; font-size: 0.9rem; display: none"></div>
+        
         <form id="login-form">
             <div class="form-group">
                 <label for="login-email">Email Address</label>
@@ -30,6 +32,8 @@
     <div id="register-view" class="auth-card view">
         <h2>Create Account</h2>
         <p>Join EduReady and start learning today.</p>
+        
+        <div id="register-message" style="margin-bottom: 1rem; text-align: center; font-size: 0.9rem; display: none"></div>
         
         <form id="register-form">
             <div class="form-group">
