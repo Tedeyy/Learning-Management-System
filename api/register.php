@@ -12,14 +12,25 @@ $db = $database->connect();
 
 if ($db === null) {
     http_response_code(500);
-    echo json_encode(["message" => "Database connection failed. Check your configuration."]);
+    echo json_encode(["message" => "Database connection failed."]);
     exit();
 }
 
 $input = file_get_contents("php://input");
 $data = json_decode($input);
 
-if ($data && !empty($data->name) && !empty($data->email) && !empty($data->password)) {
+if (
+    $data && 
+    !empty($data->first_name) && 
+    !empty($data->last_name) && 
+    !empty($data->birthdate) && 
+    !empty($data->gender) && 
+    !empty($data->address) && 
+    !empty($data->contact_number) && 
+    !empty($data->email) && 
+    !empty($data->password) &&
+    !empty($data->role)
+) {
     try {
         // Check if email already exists
         $check_query = "SELECT id FROM users WHERE email = :email";
@@ -33,23 +44,47 @@ if ($data && !empty($data->name) && !empty($data->email) && !empty($data->passwo
             exit();
         }
 
-        $query = "INSERT INTO users (name, email, password) VALUES (:name, :email, :password)";
+        $query = "INSERT INTO users (
+                    first_name, last_name, middle_name, 
+                    birthdate, gender, address, contact_number, 
+                    email, password, role
+                ) VALUES (
+                    :first_name, :last_name, :middle_name, 
+                    :birthdate, :gender, :address, :contact_number, 
+                    :email, :password, :role
+                )";
+        
         $stmt = $db->prepare($query);
 
-        $name = htmlspecialchars(strip_tags($data->name));
+        // Sanitize
+        $first_name = htmlspecialchars(strip_tags($data->first_name));
+        $last_name = htmlspecialchars(strip_tags($data->last_name));
+        $middle_name = !empty($data->middle_name) ? htmlspecialchars(strip_tags($data->middle_name)) : null;
+        $birthdate = $data->birthdate;
+        $gender = htmlspecialchars(strip_tags($data->gender));
+        $address = htmlspecialchars(strip_tags($data->address));
+        $contact_number = htmlspecialchars(strip_tags($data->contact_number));
         $email = htmlspecialchars(strip_tags($data->email));
         $password = password_hash($data->password, PASSWORD_BCRYPT);
+        $role = $data->role;
 
-        $stmt->bindParam(":name", $name);
+        $stmt->bindParam(":first_name", $first_name);
+        $stmt->bindParam(":last_name", $last_name);
+        $stmt->bindParam(":middle_name", $middle_name);
+        $stmt->bindParam(":birthdate", $birthdate);
+        $stmt->bindParam(":gender", $gender);
+        $stmt->bindParam(":address", $address);
+        $stmt->bindParam(":contact_number", $contact_number);
         $stmt->bindParam(":email", $email);
         $stmt->bindParam(":password", $password);
+        $stmt->bindParam(":role", $role);
 
         if ($stmt->execute()) {
             http_response_code(201);
             echo json_encode(["message" => "Account created successfully."]);
         } else {
             http_response_code(503);
-            echo json_encode(["message" => "Unable to create account. Service unavailable."]);
+            echo json_encode(["message" => "Unable to create account."]);
         }
     } catch (Throwable $e) {
         error_log("Registration Error: " . $e->getMessage());
@@ -58,5 +93,5 @@ if ($data && !empty($data->name) && !empty($data->email) && !empty($data->passwo
     }
 } else {
     http_response_code(400);
-    echo json_encode(["message" => "Incomplete data. Please fill all fields."]);
+    echo json_encode(["message" => "Incomplete data. Please fill all required fields."]);
 }

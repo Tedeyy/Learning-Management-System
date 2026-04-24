@@ -13,7 +13,7 @@ $db = $database->connect();
 
 if ($db === null) {
     http_response_code(500);
-    echo json_encode(["message" => "Database connection failed. Check your configuration."]);
+    echo json_encode(["message" => "Database connection failed."]);
     exit();
 }
 
@@ -22,7 +22,7 @@ $data = json_decode($input);
 
 if ($data && !empty($data->email) && !empty($data->password)) {
     try {
-        $query = "SELECT id, name, email, password FROM users WHERE email = :email";
+        $query = "SELECT id, first_name, last_name, email, password, role FROM users WHERE email = :email";
         $stmt = $db->prepare($query);
         $stmt->bindParam(":email", $data->email);
         $stmt->execute();
@@ -31,15 +31,18 @@ if ($data && !empty($data->email) && !empty($data->password)) {
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (password_verify($data->password, $row['password'])) {
                 $_SESSION['user_id'] = $row['id'];
-                $_SESSION['user_name'] = $row['name'];
+                $_SESSION['user_name'] = $row['first_name'] . ' ' . $row['last_name'];
+                $_SESSION['user_role'] = $row['role'];
 
                 http_response_code(200);
                 echo json_encode([
                     "message" => "Login successful.",
                     "user" => [
                         "id" => $row['id'],
-                        "name" => $row['name'],
-                        "email" => $row['email']
+                        "first_name" => $row['first_name'],
+                        "last_name" => $row['last_name'],
+                        "email" => $row['email'],
+                        "role" => $row['role']
                     ]
                 ]);
             } else {
@@ -57,5 +60,5 @@ if ($data && !empty($data->email) && !empty($data->password)) {
     }
 } else {
     http_response_code(400);
-    echo json_encode(["message" => "Incomplete data. Please fill all fields."]);
+    echo json_encode(["message" => "Incomplete data."]);
 }

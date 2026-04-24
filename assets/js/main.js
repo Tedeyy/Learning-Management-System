@@ -49,15 +49,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle Registration
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const name = document.getElementById('reg-name').value;
-        const email = document.getElementById('reg-email').value;
-        const password = document.getElementById('reg-password').value;
+        
+        const data = {
+            first_name: document.getElementById('reg-fname').value,
+            last_name: document.getElementById('reg-lname').value,
+            middle_name: document.getElementById('reg-mname').value,
+            role: document.getElementById('reg-role').value,
+            birthdate: document.getElementById('reg-birthdate').value,
+            gender: document.getElementById('reg-gender').value,
+            address: document.getElementById('reg-address').value,
+            contact_number: document.getElementById('reg-contact').value,
+            email: document.getElementById('reg-email').value,
+            password: document.getElementById('reg-password').value
+        };
 
         try {
             const response = await fetch('../api/register.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, password })
+                body: JSON.stringify(data)
             });
 
             const result = await response.json();
@@ -70,7 +80,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('Registration error:', error);
-            showMessage(registerMsg, 'Server connection failed. Please ensure your XAMPP server is running and the database exists.');
+            showMessage(registerMsg, 'Server connection failed. Please ensure your XAMPP server is running.');
         }
     });
 
@@ -90,17 +100,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                showMessage(loginMsg, 'Login successful! Welcome, ' + result.user.name, false);
-                // Redirect or update UI for logged-in state
+                showMessage(loginMsg, 'Login successful! Welcome, ' + result.user.first_name, false);
+                // Redirect based on role
                 setTimeout(() => {
-                    window.location.href = '../Index.html'; // Or dashboard if you have one
+                    if (result.user.role === 'instructor') {
+                        window.location.href = 'instructor_dashboard.php';
+                    } else {
+                        window.location.href = 'student_dashboard.php';
+                    }
                 }, 1500);
             } else {
                 showMessage(loginMsg, result.message || 'Login failed.');
             }
         } catch (error) {
             console.error('Login error:', error);
-            showMessage(loginMsg, 'Server connection failed. Please ensure your XAMPP server is running and the database exists.');
+            showMessage(loginMsg, 'Server connection failed.');
         }
     });
 });
