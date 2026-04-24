@@ -1,11 +1,12 @@
 :root {
-    --primary-color: #010048;
-    --secondary-color: #00a8ff; /* A lighter blue for accents */
+    --primary-color: #2563eb;
+    --secondary-color: #7c3aed;
+    --dark-blue: #0f172a;
     --text-color: #333;
-    --text-light: #666;
+    --text-light: #64748b;
     --white: #ffffff;
-    --bg-light: #f4f7fe;
-    --transition: all 0.3s ease;
+    --bg-light: #f8fafc;
+    --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --max-width: 1200px;
 }
 
@@ -23,8 +24,9 @@ body {
 }
 
 h1, h2, h3, h4 {
-    color: var(--primary-color);
-    line-height: 1.2;
+    font-family: 'Outfit', sans-serif;
+    color: var(--dark-blue);
+    line-height: 1.1;
 }
 
 a {
@@ -60,9 +62,9 @@ ul {
 }
 
 .btn-primary:hover {
-    background: #010066;
+    background: #1d4ed8;
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(1, 0, 72, 0.2);
+    box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
 }
 
 .btn-outline {
@@ -91,7 +93,7 @@ nav.scrolled {
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     padding: 1rem 0;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
 }
 
 nav .container {
@@ -107,6 +109,7 @@ nav .container {
     font-size: 1.5rem;
     font-weight: 800;
     color: var(--primary-color);
+    font-family: 'Outfit', sans-serif;
 }
 
 .logo img {
@@ -125,8 +128,8 @@ nav .container {
 
 /* Hero Section */
 .hero {
-    padding: 10rem 0 6rem;
-    background: linear-gradient(135deg, #f4f7fe 0%, #ffffff 100%);
+    padding: 12rem 0 8rem;
+    background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.05) 0%, rgba(255, 255, 255, 0) 50%);
     position: relative;
     overflow: hidden;
 }
@@ -161,7 +164,13 @@ nav .container {
 .hero-image img {
     width: 100%;
     border-radius: 20px;
-    box-shadow: 20px 20px 60px rgba(1, 0, 72, 0.1);
+}
+
+/* Floating Animation */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+    100% { transform: translateY(0px); }
 }
 
 /* Features */
@@ -192,19 +201,19 @@ nav .container {
     border-radius: 20px;
     text-align: center;
     transition: var(--transition);
-    border: 1px solid #eee;
+    border: 1px solid #f1f5f9;
 }
 
 .feature-card:hover {
     transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-    border-color: var(--secondary-color);
+    box-shadow: 0 20px 40px rgba(37, 99, 235, 0.1);
+    border-color: #dbeafe;
 }
 
 .feature-icon {
     width: 70px;
     height: 70px;
-    background: var(--bg-light);
+    background: #f8fafc;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -216,7 +225,7 @@ nav .container {
 
 /* Stats Section */
 .stats {
-    background: var(--primary-color);
+    background: var(--dark-blue);
     color: var(--white);
     padding: 6rem 0;
 }
@@ -234,13 +243,16 @@ nav .container {
 
 .stat-item h3 {
     font-size: 3rem;
-    color: var(--white);
+    color: var(--primary-color);
     margin-bottom: 0.5rem;
 }
 
 .stat-item p {
-    font-size: 1.1rem;
+    font-size: 1rem;
     opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
 }
 
 /* Courses Section */
@@ -278,7 +290,7 @@ nav .container {
 }
 
 .course-tag {
-    background: rgba(1, 0, 72, 0.1);
+    background: rgba(37, 99, 235, 0.1);
     color: var(--primary-color);
     padding: 0.3rem 0.8rem;
     border-radius: 5px;
@@ -301,7 +313,7 @@ nav .container {
 /* Footer */
 footer {
     padding: 6rem 0 2rem;
-    background: #010030;
+    background: #0f172a;
     color: var(--white);
 }
 
@@ -349,7 +361,7 @@ footer {
 .footer-bottom {
     text-align: center;
     padding-top: 2rem;
-    border-top: 1px solid rgba(255,255,255,0.1);
+    border-top: 1px solid rgba(255,255,255,0.05);
     opacity: 0.6;
     font-size: 0.9rem;
 }

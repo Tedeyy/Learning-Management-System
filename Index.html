@@ -4,15 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduReady | Modern Learning Management System</title>
+    <title>EduReady | High-Fidelity Learning Management System</title>
     <link rel="icon" type="image/jpg" href="assets/img/logo.jpg">
     <meta name="description"
-        content="EduReady is a state-of-the-art LMS designed to empower educators and inspire learners. Join thousands of students today.">
+        content="EduReady is a professional LMS designed for granular progress tracking, modular curriculum building, and seamless student management.">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -32,9 +32,8 @@
             </a>
             <ul class="nav-links">
                 <li><a href="#features">Features</a></li>
-                <li><a href="#courses">Courses</a></li>
-                <li><a href="#about">About</a></li>
-                <li><a href="views/main.php" class="btn btn-primary">Join Now</a></li>
+                <li><a href="#platform">The Platform</a></li>
+                <li><a href="views/main.php" class="btn btn-primary" style="box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);">Get Started</a></li>
             </ul>
         </div>
     </nav>
@@ -43,132 +42,94 @@
     <section class="hero">
         <div class="container">
             <div class="hero-content">
-                <h1>Unlock Your Potential with <span style="color: var(--secondary-color)">EduReady</span></h1>
-                <p>The all-in-one learning management system designed to make online education seamless, engaging, and
-                    effective for everyone.</p>
+                <div class="badge" style="display:inline-block; padding: 6px 16px; background: #eff6ff; color: var(--primary-color); border-radius: 30px; font-size: 0.8rem; font-weight: 700; margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px;">Next-Gen LMS</div>
+                <h1 style="font-size: 4rem; line-height: 1.1; margin-bottom: 1.5rem;">Precision Learning, <span style="background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Redefined.</span></h1>
+                <p style="font-size: 1.25rem; color: #475569; margin-bottom: 2.5rem; max-width: 600px;">Experience a modular approach to education. Track every milestone with granular progress bars and engage with dynamic course content designed for the modern age.</p>
                 <div class="hero-btns">
-                    <a href="#courses" class="btn btn-primary">Explore Courses</a>
-                    <a href="views/main.php" class="btn btn-outline">Learn More</a>
+                    <a href="views/main.php" class="btn btn-primary" style="padding: 1.2rem 2.5rem; font-size: 1.1rem;">Explore the Catalog</a>
+                    <a href="#features" class="btn btn-outline" style="padding: 1.2rem 2.5rem; font-size: 1.1rem;">See Features</a>
                 </div>
             </div>
             <div class="hero-image">
-                <img src="assets/img/hero.png" alt="Learning Experience">
+                <div style="position: relative;">
+                    <img src="assets/img/hero.png" alt="EduReady Dashboard View" style="filter: drop-shadow(0 30px 60px rgba(0,0,0,0.1));">
+                    <!-- Floating Progress UI element -->
+                    <div style="position: absolute; bottom: 10%; right: -5%; background: white; padding: 1.5rem; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); width: 200px; animation: float 6s ease-in-out infinite;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 8px;">
+                            <span style="font-weight: 700;">Course Progress</span>
+                            <span style="color: var(--primary-color); font-weight: 800;">84%</span>
+                        </div>
+                        <div style="height: 8px; width: 100%; background: #f1f5f9; border-radius: 10px; overflow: hidden;">
+                            <div style="height: 100%; width: 84%; background: var(--primary-color);"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Features Section -->
-    <section class="features reveal" id="features" style="transform: translateY(50px)">
+    <section class="features reveal" id="features">
         <div class="container">
-            <div class="section-header">
-                <h2>Why Choose EduReady?</h2>
-                <p>We provide the tools and resources you need to succeed in the digital learning era.</p>
+            <div class="section-header" style="max-width: 700px; margin: 0 auto 5rem; text-align: center;">
+                <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Built for Results</h2>
+                <p style="font-size: 1.1rem; color: #64748b;">Every feature of EduReady is engineered to optimize the relationship between instructors and students.</p>
             </div>
             <div class="features-grid">
-                <div class="feature-card reveal" style="transform: translateY(30px)">
-                    <div class="feature-icon"><i data-lucide="book-open"></i></div>
-                    <h3>Diverse Courses</h3>
-                    <p>Access hundreds of high-quality courses across various disciplines and skill levels.</p>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #eff6ff; color: var(--primary-color);"><i data-lucide="layout"></i></div>
+                    <h3>Modular Curriculum</h3>
+                    <p>Organize learning materials into logical modules, making complex subjects easy to digest and follow.</p>
                 </div>
-                <div class="feature-card reveal" style="transform: translateY(30px)">
-                    <div class="feature-icon"><i data-lucide="users"></i></div>
-                    <h3>Expert Instructors</h3>
-                    <p>Learn from industry leaders and experienced educators dedicated to your growth.</p>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #f5f3ff; color: var(--secondary-color);"><i data-lucide="bar-chart-3"></i></div>
+                    <h3>Granular Tracking</h3>
+                    <p>Visualize progress with module-level and course-level progress bars. Know exactly where you stand at a glance.</p>
                 </div>
-                <div class="feature-card reveal" style="transform: translateY(30px)">
-                    <div class="feature-icon"><i data-lucide="monitor"></i></div>
-                    <h3>Interactive Learning</h3>
-                    <p>Engage with dynamic content, quizzes, and collaborative tools for a better experience.</p>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #ecfdf5; color: #10b981;"><i data-lucide="users-2"></i></div>
+                    <h3>Instructor Hub</h3>
+                    <p>Powerful tools for educators to manage rosters, view student profiles, and track individual engagement.</p>
                 </div>
-                <div class="feature-card reveal" style="transform: translateY(30px)">
-                    <div class="feature-icon"><i data-lucide="award"></i></div>
-                    <h3>Certifications</h3>
-                    <p>Earn recognized certificates upon completion to boost your professional profile.</p>
+                <div class="feature-card">
+                    <div class="feature-icon" style="background: #fff7ed; color: #f59e0b;"><i data-lucide="clipboard-check"></i></div>
+                    <h3>Smart Assessments</h3>
+                    <p>Integrated Google Forms and multimedia support for interactive activities that sync with your progress.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Stats Section -->
-    <section class="stats reveal" style="transform: translateY(50px)">
+    <section class="stats reveal" style="background: var(--dark-blue); color: white; border-radius: 50px; margin: 0 2rem; padding: 6rem 0;">
         <div class="container">
             <div class="stats-grid">
                 <div class="stat-item">
-                    <h3>50k+</h3>
-                    <p>Active Students</p>
+                    <h3 style="font-size: 3.5rem; color: var(--primary-color);">100%</h3>
+                    <p style="opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem;">Responsive Interface</p>
                 </div>
                 <div class="stat-item">
-                    <h3>1.2k+</h3>
-                    <p>Expert Courses</p>
+                    <h3 style="font-size: 3.5rem; color: var(--secondary-color);">Real-time</h3>
+                    <p style="opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem;">Progress Analytics</p>
                 </div>
                 <div class="stat-item">
-                    <h3>200+</h3>
-                    <p>Global Partners</p>
-                </div>
-                <div class="stat-item">
-                    <h3>98%</h3>
-                    <p>Satisfaction Rate</p>
+                    <h3 style="font-size: 3.5rem; color: #10b981;">Unlimited</h3>
+                    <p style="opacity: 0.7; letter-spacing: 1px; text-transform: uppercase; font-size: 0.8rem; font-weight: 700; margin-top: 0.5rem;">Learning Materials</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Courses Preview -->
-    <section class="courses reveal" id="courses" style="transform: translateY(50px)">
+    <!-- CTA Section -->
+    <section id="platform" class="reveal" style="padding: 10rem 0; text-align: center;">
         <div class="container">
-            <div class="section-header">
-                <h2>Popular Courses</h2>
-                <p>Start your journey with our most trending and highly-rated programs.</p>
-            </div>
-            <div class="courses-grid">
-                <div class="course-card reveal" style="transform: translateY(30px)">
-                    <div class="course-img"
-                        style="background: linear-gradient(rgba(1,0,72,0.1), rgba(1,0,72,0.1)), url('https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=600'); background-size: cover;">
-                    </div>
-                    <div class="course-content">
-                        <span class="course-tag">Web Development</span>
-                        <h3>Full-Stack Mastery 2024</h3>
-                        <p>Master modern web technologies from frontend to backend.</p>
-                        <div class="course-meta">
-                            <span><i data-lucide="clock"
-                                    style="width:14px; vertical-align:middle; margin-right:4px"></i> 40 Hours</span>
-                            <span style="font-weight:700; color:var(--primary-color)">$89.99</span>
-                        </div>
-                    </div>
+            <div style="max-width: 800px; margin: 0 auto;">
+                <h2 style="font-size: 3.5rem; line-height: 1.1; margin-bottom: 2rem;">Ready to start your <br><span style="color: var(--primary-color)">learning journey?</span></h2>
+                <p style="font-size: 1.2rem; color: #64748b; margin-bottom: 3rem;">Whether you are an instructor looking to share knowledge or a student ready to master new skills, EduReady provides the perfect environment.</p>
+                <div style="display: flex; gap: 1rem; justify-content: center;">
+                    <a href="views/main.php" class="btn btn-primary" style="padding: 1.2rem 3rem;">Join Now</a>
+                    <a href="views/main.php" class="btn btn-outline" style="padding: 1.2rem 3rem;">Student Login</a>
                 </div>
-                <div class="course-card reveal" style="transform: translateY(30px)">
-                    <div class="course-img"
-                        style="background: linear-gradient(rgba(1,0,72,0.1), rgba(1,0,72,0.1)), url('https://images.unsplash.com/photo-1551288049-bbbda536339a?auto=format&fit=crop&q=80&w=600'); background-size: cover;">
-                    </div>
-                    <div class="course-content">
-                        <span class="course-tag">Data Science</span>
-                        <h3>Python for Data Analytics</h3>
-                        <p>Learn to analyze complex data sets and build visualizations.</p>
-                        <div class="course-meta">
-                            <span><i data-lucide="clock"
-                                    style="width:14px; vertical-align:middle; margin-right:4px"></i> 32 Hours</span>
-                            <span style="font-weight:700; color:var(--primary-color)">$74.99</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="course-card reveal" style="transform: translateY(30px)">
-                    <div class="course-img"
-                        style="background: linear-gradient(rgba(1,0,72,0.1), rgba(1,0,72,0.1)), url('https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?auto=format&fit=crop&q=80&w=600'); background-size: cover;">
-                    </div>
-                    <div class="course-content">
-                        <span class="course-tag">Design</span>
-                        <h3>UI/UX Design Essentials</h3>
-                        <p>Create stunning user interfaces and intuitive experiences.</p>
-                        <div class="course-meta">
-                            <span><i data-lucide="clock"
-                                    style="width:14px; vertical-align:middle; margin-right:4px"></i> 28 Hours</span>
-                            <span style="font-weight:700; color:var(--primary-color)">$65.00</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div style="text-align:center; margin-top:4rem">
-                <a href="#" class="btn btn-outline">View All Courses</a>
             </div>
         </div>
     </section>
@@ -178,49 +139,46 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-col">
-                    <a href="#" class="footer-logo">EduReady</a>
-                    <p style="opacity: 0.7; margin-bottom: 2rem">Empowering the next generation of learners through
-                        technology and innovation. Your future starts here.</p>
+                    <a href="#" class="footer-logo" style="font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 1.8rem;">EduReady</a>
+                    <p style="opacity: 0.7; margin-bottom: 2rem; line-height: 1.6;">A professional Learning Management System dedicated to granular tracking and modular education. Empowering learners since 2024.</p>
                     <div style="display: flex; gap: 1rem">
-                        <a href="#"><i data-lucide="facebook"></i></a>
-                        <a href="#"><i data-lucide="twitter"></i></a>
-                        <a href="#"><i data-lucide="linkedin"></i></a>
-                        <a href="#"><i data-lucide="instagram"></i></a>
+                        <a href="#" style="background: #1e293b; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: white;"><i data-lucide="facebook" style="width:18px;"></i></a>
+                        <a href="#" style="background: #1e293b; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: white;"><i data-lucide="twitter" style="width:18px;"></i></a>
+                        <a href="#" style="background: #1e293b; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; color: white;"><i data-lucide="linkedin" style="width:18px;"></i></a>
                     </div>
                 </div>
                 <div class="footer-col">
-                    <h4>Quick Links</h4>
+                    <h4>The Platform</h4>
                     <ul>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Our Courses</a></li>
-                        <li><a href="#">Success Stories</a></li>
-                        <li><a href="#">Contact</a></li>
+                        <li><a href="views/main.php">Student Dashboard</a></li>
+                        <li><a href="views/main.php">Instructor Hub</a></li>
+                        <li><a href="views/main.php">Course Catalog</a></li>
                     </ul>
                 </div>
                 <div class="footer-col">
                     <h4>Support</h4>
                     <ul>
-                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Documentation</a></li>
                         <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms of Service</a></li>
-                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Terms of Use</a></li>
                     </ul>
                 </div>
                 <div class="footer-col newsletter">
-                    <h4>Newsletter</h4>
-                    <p style="opacity: 0.7; margin-bottom: 1.5rem">Subscribe to get the latest updates and course
-                        offers.</p>
-                    <input type="email" placeholder="Your email address">
-                    <button class="btn btn-primary" style="width:100%">Subscribe</button>
+                    <h4>Get Updates</h4>
+                    <p style="opacity: 0.7; margin-bottom: 1.5rem">Stay informed about new features and courses.</p>
+                    <div style="display: flex; gap: 5px;">
+                        <input type="email" placeholder="Email" style="flex: 1; border-radius: 10px 0 0 10px;">
+                        <button class="btn btn-primary" style="padding: 0 15px; border-radius: 0 10px 10px 0;"><i data-lucide="send" style="width:18px;"></i></button>
+                    </div>
                 </div>
             </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 EduReady LMS. All rights reserved.</p>
+            <div class="footer-bottom" style="margin-top: 5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem;">
+                <p>&copy; 2026 EduReady LMS. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Custom JS -->
+    <!-- Scripts -->
     <script src="assets/js/Index.js" defer></script>
 </body>
 
