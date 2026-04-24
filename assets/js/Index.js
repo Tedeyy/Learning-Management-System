@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 
-    // Navbar scroll effect
+    // Navbar Scroll Effect
     const navbar = document.getElementById('navbar');
     window.addEventListener('scroll', () => {
         if (window.scrollY > 50) {
@@ -14,20 +14,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Reveal animations on scroll
-    const revealCallback = (entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.classList.add('active');
+    // Reveal on Scroll
+    const revealElements = document.querySelectorAll('.reveal');
+    const revealOnScroll = () => {
+        for (let i = 0; i < revealElements.length; i++) {
+            const windowHeight = window.innerHeight;
+            const elementTop = revealElements[i].getBoundingClientRect().top;
+            const elementVisible = 150;
+            if (elementTop < windowHeight - elementVisible) {
+                revealElements[i].classList.add('active');
             }
-        });
+        }
     };
 
-    const revealObserver = new IntersectionObserver(revealCallback, {
-        threshold: 0.1
-    });
-
-    document.querySelectorAll('.reveal').forEach(el => {
-        revealObserver.observe(el);
-    });
+    window.addEventListener('scroll', revealOnScroll);
+    revealOnScroll(); // Run once on load
 });
