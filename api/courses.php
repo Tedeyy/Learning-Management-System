@@ -19,163 +19,200 @@ $method = $_SERVER['REQUEST_METHOD'];
 $type = $_GET['type'] ?? 'courses';
 $now = date('Y-m-d H:i:s');
 
-if ($method === 'GET') {
-    if ($type === 'courses') {
-        $instructor_id = $_GET['instructor_id'] ?? null;
-        $search = $_GET['search'] ?? null;
-        $student_id = $_GET['student_id'] ?? null;
-        
-        $query = "SELECT c.id, c.title, c.description, c.created_at, u.first_name, u.last_name as instructor_name";
-        if ($student_id) { $query .= ", (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND student_id = :sid) as is_enrolled"; }
-        $query .= " FROM courses c JOIN users u ON c.instructor_id = u.id";
-        
-        $params = [];
-        if ($instructor_id) { $query .= " WHERE c.instructor_id = :instructor_id"; $params[':instructor_id'] = $instructor_id; }
-        elseif ($search) { $query .= " WHERE c.title LIKE :search OR c.description LIKE :search"; $params[':search'] = "%$search%"; }
-        
-        if ($student_id) { $params[':sid'] = $student_id; }
-        
-        $query .= " ORDER BY c.created_at DESC";
-        try {
+try {
+    if ($method === 'GET') {
+        if ($type === 'courses') {
+            $instructor_id = $_GET['instructor_id'] ?? null;
+            $search = $_GET['search'] ?? null;
+            $student_id = $_GET['student_id'] ?? null;
+            
+            $query = "SELECT c.id, c.title, c.description, c.created_at, CONCAT(u.first_name, ' ', u.last_name) as instructor_name";
+            if ($student_id) { $query .= ", (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND student_id = :sid) as is_enrolled"; }
+            $query .= " FROM courses c JOIN users u ON c.instructor_id = u.id";
+            
+            $params = [];
+            if ($instructor_id) { $query .= " WHERE c.instructor_id = :instructor_id"; $params[':instructor_id'] = $instructor_id; }
+            elseif ($search) { $query .= " WHERE c.title LIKE :search OR c.description LIKE :search"; $params[':search'] = "%$search%"; }
+            
+            if ($student_id) { $params[':sid'] = $student_id; }
+            
+            $query .= " ORDER BY c.created_at DESC";
             $stmt = $db->prepare($query);
             foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
             $stmt->execute();
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-        } catch (Throwable $e) { http_response_code(500); echo json_encode(["message" => $e->getMessage()]); }
-    } elseif ($type === 'categories') {
-        $course_id = $_GET['course_id'] ?? null;
-        $query = "SELECT * FROM activity_categories WHERE course_id = :course_id ORDER BY created_at ASC";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":course_id", $course_id);
-        $stmt->execute();
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-    } elseif ($type === 'activities') {
-        $category_id = $_GET['category_id'] ?? null;
-        $query = "SELECT * FROM activities WHERE category_id = :category_id ORDER BY created_at ASC";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":category_id", $category_id);
-        $stmt->execute();
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-    } elseif ($type === 'materials') {
-        $course_id = $_GET['course_id'] ?? null;
-        $query = "SELECT * FROM learning_materials WHERE course_id = :course_id ORDER BY created_at ASC";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":course_id", $course_id);
-        $stmt->execute();
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-    } elseif ($type === 'enrollments') {
-        $student_id = $_GET['student_id'] ?? null;
-        $query = "SELECT e.course_id, e.enrolled_at, c.title, c.description, u.first_name, u.last_name as instructor_name 
-                  FROM enrollments e 
-                  JOIN courses c ON e.course_id = c.id 
-                  JOIN users u ON c.instructor_id = u.id 
-                  WHERE e.student_id = :student_id 
-                  ORDER BY e.enrolled_at DESC";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":student_id", $student_id);
-        $stmt->execute();
-        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
-    }
-} elseif ($method === 'POST') {
-    $data = json_decode(file_get_contents("php://input"));
-    if ($type === 'courses') {
-        $query = "INSERT INTO courses (instructor_id, title, description, created_at) VALUES (:instructor_id, :title, :description, :now)";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":instructor_id", $data->instructor_id);
-        $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
-        $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
-        $stmt->bindValue(":now", $now);
-        if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Course created"]); }
-    } elseif ($type === 'categories') {
-        $query = "INSERT INTO activity_categories (course_id, name, created_at) VALUES (:course_id, :name, :now)";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":course_id", $data->course_id);
-        $stmt->bindValue(":name", htmlspecialchars(strip_tags($data->name)));
-        $stmt->bindValue(":now", $now);
-        if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Category created"]); }
-    } elseif ($type === 'activities') {
-        $query = "INSERT INTO activities (category_id, course_id, title, description, activity_type, content_url, sequence_number, created_at) 
-                  VALUES (:category_id, :course_id, :title, :description, :type, :url, :seq, :now)";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":category_id", $data->category_id);
-        $stmt->bindValue(":course_id", $data->course_id);
-        $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
-        $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
-        $stmt->bindValue(":type", $data->activity_type ?? 'google_form');
-        $stmt->bindValue(":url", $data->content_url ?? '');
-        $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : 0);
-        $stmt->bindValue(":now", $now);
-        if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Activity created"]); }
-    } elseif ($type === 'materials') {
-        $query = "INSERT INTO learning_materials (course_id, title, description, url, material_type, created_at) 
-                  VALUES (:course_id, :title, :description, :url, :type, :now)";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":course_id", $data->course_id);
-        $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
-        $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
-        $stmt->bindValue(":url", htmlspecialchars(strip_tags($data->url)));
-        $stmt->bindValue(":type", $data->material_type ?? 'link');
-        $stmt->bindValue(":now", $now);
-        if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material added"]); }
-    } elseif ($type === 'enrollments') {
-        $query = "INSERT INTO enrollments (course_id, student_id) VALUES (:course_id, :student_id)";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":course_id", $data->course_id);
-        $stmt->bindValue(":student_id", $data->student_id);
-        try {
+        } elseif ($type === 'categories') {
+            $course_id = $_GET['course_id'] ?? null;
+            $student_id = $_GET['student_id'] ?? null;
+            
+            $query = "SELECT ac.*, 
+                        (SELECT COUNT(*) FROM activities WHERE category_id = ac.id) + 
+                        (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_items";
+            
+            if ($student_id) {
+                $query .= ", (SELECT COUNT(*) FROM submissions s JOIN activities a ON s.activity_id = a.id WHERE a.category_id = ac.id AND s.student_id = :student_id) +
+                            (SELECT COUNT(*) FROM material_views mv JOIN learning_materials lm ON mv.material_id = lm.id WHERE lm.category_id = ac.id AND mv.student_id = :student_id) as completed_items";
+            }
+            
+            $query .= " FROM activity_categories ac WHERE course_id = :course_id ORDER BY created_at ASC";
+            
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(":course_id", $course_id);
+            if ($student_id) { $stmt->bindParam(":student_id", $student_id); }
+            $stmt->execute();
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        } elseif ($type === 'activities') {
+            $category_id = $_GET['category_id'] ?? null;
+            $student_id = $_GET['student_id'] ?? null;
+            
+            $query = "SELECT a.*";
+            if ($student_id) { $query .= ", (SELECT COUNT(*) FROM submissions WHERE activity_id = a.id AND student_id = :student_id) as is_done"; }
+            $query .= " FROM activities a WHERE category_id = :category_id ORDER BY created_at ASC";
+            
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(":category_id", $category_id);
+            if ($student_id) { $stmt->bindParam(":student_id", $student_id); }
+            $stmt->execute();
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        } elseif ($type === 'materials') {
+            $category_id = $_GET['category_id'] ?? null;
+            $course_id = $_GET['course_id'] ?? null;
+            $student_id = $_GET['student_id'] ?? null;
+            
+            $query = "SELECT lm.*";
+            if ($student_id) { $query .= ", (SELECT COUNT(*) FROM material_views WHERE material_id = lm.id AND student_id = :student_id) as is_viewed"; }
+            $query .= " FROM learning_materials lm WHERE " . ($category_id ? "category_id = :category_id" : "course_id = :course_id") . " ORDER BY created_at ASC";
+            
+            $stmt = $db->prepare($query);
+            if ($category_id) { $stmt->bindParam(":category_id", $category_id); }
+            else { $stmt->bindParam(":course_id", $course_id); }
+            if ($student_id) { $stmt->bindParam(":student_id", $student_id); }
+            $stmt->execute();
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        } elseif ($type === 'enrollments') {
+            $student_id = $_GET['student_id'] ?? null;
+            $query = "SELECT e.course_id, e.enrolled_at, c.title, c.description, CONCAT(u.first_name, ' ', u.last_name) as instructor_name 
+                      FROM enrollments e 
+                      JOIN courses c ON e.course_id = c.id 
+                      JOIN users u ON c.instructor_id = u.id 
+                      WHERE e.student_id = :student_id 
+                      ORDER BY e.enrolled_at DESC";
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(":student_id", $student_id);
+            $stmt->execute();
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        }
+    } elseif ($method === 'POST') {
+        $data = json_decode(file_get_contents("php://input"));
+        if ($type === 'courses') {
+            $query = "INSERT INTO courses (instructor_id, title, description, created_at) VALUES (:instructor_id, :title, :description, :now)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":instructor_id", $data->instructor_id);
+            $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
+            $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
+            $stmt->bindValue(":now", $now);
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Course created"]); }
+        } elseif ($type === 'categories') {
+            $query = "INSERT INTO activity_categories (course_id, name, created_at) VALUES (:course_id, :name, :now)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":course_id", $data->course_id);
+            $stmt->bindValue(":name", htmlspecialchars(strip_tags($data->name)));
+            $stmt->bindValue(":now", $now);
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Category created"]); }
+        } elseif ($type === 'activities') {
+            $query = "INSERT INTO activities (category_id, course_id, title, description, activity_type, content_url, sequence_number, created_at) 
+                      VALUES (:category_id, :course_id, :title, :description, :type, :url, :seq, :now)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":category_id", $data->category_id);
+            $stmt->bindValue(":course_id", $data->course_id);
+            $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
+            $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
+            $stmt->bindValue(":type", $data->activity_type ?? 'google_form');
+            $stmt->bindValue(":url", $data->content_url ?? '');
+            $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : 0);
+            $stmt->bindValue(":now", $now);
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Activity created"]); }
+        } elseif ($type === 'materials') {
+            $query = "INSERT INTO learning_materials (course_id, category_id, title, description, url, material_type, created_at) 
+                      VALUES (:course_id, :category_id, :title, :description, :url, :type, :now)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":course_id", $data->course_id);
+            $stmt->bindValue(":category_id", $data->category_id ?? null);
+            $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
+            $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
+            $stmt->bindValue(":url", htmlspecialchars(strip_tags($data->url)));
+            $stmt->bindValue(":type", $data->material_type ?? 'link');
+            $stmt->bindValue(":now", $now);
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material added"]); }
+        } elseif ($type === 'enrollments') {
+            $query = "INSERT INTO enrollments (course_id, student_id) VALUES (:course_id, :student_id)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":course_id", $data->course_id);
+            $stmt->bindValue(":student_id", $data->student_id);
             if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Enrolled successfully"]); }
-        } catch (PDOException $e) {
-            if ($e->getCode() == 23000) { http_response_code(400); echo json_encode(["message" => "Already enrolled"]); }
-            else { http_response_code(500); echo json_encode(["message" => "Enrolment failed"]); }
+        } elseif ($type === 'submissions') {
+            $query = "INSERT INTO submissions (activity_id, student_id) VALUES (:activity_id, :student_id)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":activity_id", $data->activity_id);
+            $stmt->bindValue(":student_id", $data->student_id);
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Activity completed"]); }
+        } elseif ($type === 'material_views') {
+            $query = "INSERT INTO material_views (material_id, student_id) VALUES (:material_id, :student_id)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":material_id", $data->material_id);
+            $stmt->bindValue(":student_id", $data->student_id);
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material viewed"]); }
+        }
+    } elseif ($method === 'PUT') {
+        $data = json_decode(file_get_contents("php://input"));
+        if ($type === 'categories') {
+            $query = "UPDATE activity_categories SET name = :name WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $data->id);
+            $stmt->bindValue(":name", htmlspecialchars(strip_tags($data->name)));
+            if ($stmt->execute()) { echo json_encode(["message" => "Category updated"]); }
+        } elseif ($type === 'materials') {
+            $query = "UPDATE learning_materials SET title = :title, description = :description, url = :url, material_type = :type, updated_at = :now WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $data->id);
+            $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
+            $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
+            $stmt->bindValue(":url", htmlspecialchars(strip_tags($data->url)));
+            $stmt->bindValue(":type", $data->material_type ?? 'link');
+            $stmt->bindValue(":now", $now);
+            if ($stmt->execute()) { echo json_encode(["message" => "Material updated"]); }
+        } elseif ($type === 'activities') {
+            $query = "UPDATE activities SET title = :title, description = :description, content_url = :url, activity_type = :type, sequence_number = :seq, updated_at = :now WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $data->id);
+            $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
+            $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
+            $stmt->bindValue(":url", $data->content_url ?? '');
+            $stmt->bindValue(":type", $data->activity_type ?? 'google_form');
+            $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : 0);
+            $stmt->bindValue(":now", $now);
+            if ($stmt->execute()) { echo json_encode(["message" => "Activity updated"]); }
+        }
+    } elseif ($method === 'DELETE') {
+        $id = $_GET['id'] ?? null;
+        if ($type === 'categories') {
+            $query = "DELETE FROM activity_categories WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $id);
+            if ($stmt->execute()) { echo json_encode(["message" => "Category deleted"]); }
+        } elseif ($type === 'activities') {
+            $query = "DELETE FROM activities WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $id);
+            if ($stmt->execute()) { echo json_encode(["message" => "Activity deleted"]); }
+        } elseif ($type === 'materials') {
+            $query = "DELETE FROM learning_materials WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $id);
+            if ($stmt->execute()) { echo json_encode(["message" => "Material deleted"]); }
         }
     }
-} elseif ($method === 'PUT') {
-    $data = json_decode(file_get_contents("php://input"));
-    if ($type === 'categories') {
-        $query = "UPDATE activity_categories SET name = :name WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":id", $data->id);
-        $stmt->bindValue(":name", htmlspecialchars(strip_tags($data->name)));
-        if ($stmt->execute()) { echo json_encode(["message" => "Category updated"]); }
-    } elseif ($type === 'materials') {
-        $query = "UPDATE learning_materials SET title = :title, description = :description, url = :url, material_type = :type, updated_at = :now WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":id", $data->id);
-        $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
-        $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
-        $stmt->bindValue(":url", htmlspecialchars(strip_tags($data->url)));
-        $stmt->bindValue(":type", $data->material_type ?? 'link');
-        $stmt->bindValue(":now", $now);
-        if ($stmt->execute()) { echo json_encode(["message" => "Material updated"]); }
-    } elseif ($type === 'activities') {
-        $query = "UPDATE activities SET title = :title, description = :description, content_url = :url, activity_type = :type, sequence_number = :seq, updated_at = :now WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":id", $data->id);
-        $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
-        $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
-        $stmt->bindValue(":url", $data->content_url ?? '');
-        $stmt->bindValue(":type", $data->activity_type ?? 'google_form');
-        $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : 0);
-        $stmt->bindValue(":now", $now);
-        if ($stmt->execute()) { echo json_encode(["message" => "Activity updated"]); }
-    }
-} elseif ($method === 'DELETE') {
-    $id = $_GET['id'] ?? null;
-    if (!$id) { http_response_code(400); echo json_encode(["message" => "ID required"]); exit(); }
-    if ($type === 'categories') {
-        $query = "DELETE FROM activity_categories WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":id", $id);
-        if ($stmt->execute()) { echo json_encode(["message" => "Category deleted"]); }
-    } elseif ($type === 'activities') {
-        $query = "DELETE FROM activities WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":id", $id);
-        if ($stmt->execute()) { echo json_encode(["message" => "Activity deleted"]); }
-    } elseif ($type === 'materials') {
-        $query = "DELETE FROM learning_materials WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(":id", $id);
-        if ($stmt->execute()) { echo json_encode(["message" => "Material deleted"]); }
-    }
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(["message" => "API Error: " . $e->getMessage()]);
 }

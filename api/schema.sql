@@ -67,16 +67,12 @@ CREATE TABLE activities (
 -- 6. Submissions / Progress Tracker Table
 CREATE TABLE submissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    activity_id INT,
-    student_id INT,
-    status VARCHAR(50) DEFAULT 'unlocked' CHECK (status IN ('unlocked', 'completed', 'submitted', 'graded')),
-    submission_file_url TEXT,
-    grade DECIMAL(5,2),
-    instructor_feedback TEXT,
-    submitted_at TIMESTAMP NULL DEFAULT NULL,
+    activity_id INT NOT NULL,
+    student_id INT NOT NULL,
+    completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
     FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
-    UNIQUE(activity_id, student_id) 
+    UNIQUE(activity_id, student_id)
 );
 
 -- 7. Comments Table
@@ -87,8 +83,8 @@ CREATE TABLE comments (
     parent_id INT NULL DEFAULT NULL,
     content TEXT NOT NULL,
     visibility VARCHAR(20) DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
@@ -98,13 +94,15 @@ CREATE TABLE comments (
 CREATE TABLE learning_materials (
     id INT AUTO_INCREMENT PRIMARY KEY,
     course_id INT NOT NULL,
+    category_id INT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     url TEXT NOT NULL,
     material_type VARCHAR(50) DEFAULT 'link',
-    created_at TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES activity_categories(id) ON DELETE SET NULL
 );
 
 -- 9. Viewed Materials  

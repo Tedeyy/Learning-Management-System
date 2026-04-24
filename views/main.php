@@ -313,6 +313,44 @@ include 'content/navbar.php';
             </section>
         </div>
     </div>
+
+    <!-- Student Learning View (Dedicated Curriculum View) -->
+    <div id="learning-view" class="dashboard-view view" style="width: 100%; max-width: 1200px; padding: 2rem;">
+        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <a href="#" id="back-to-catalog" style="display: flex; align-items: center; gap: 8px; color: var(--secondary-color); font-weight: 600; text-decoration: none; margin-bottom: 0.5rem;">
+                    <i data-lucide="chevron-left"></i> Back to Course Catalog
+                </a>
+                <h1 id="learning-course-title" style="color: var(--primary-color);">Course Title</h1>
+            </div>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: flex-start;">
+            <!-- Learning Sidebar: Modules -->
+            <aside style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #eee; height: fit-content; position: sticky; top: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; color: var(--secondary-color); font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                    <i data-lucide="layers" style="width: 20px;"></i> Modules
+                </h3>
+                <div id="learning-categories-list" style="display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Modules load here -->
+                </div>
+            </aside>
+
+            <!-- Learning Content: Activities -->
+            <main>
+                <div id="learning-no-selection" style="background: white; border-radius: 20px; border: 1px solid #eee; padding: 4rem; text-align: center;">
+                    <i data-lucide="play-circle" style="width: 64px; height: 64px; color: #eee; margin-bottom: 1.5rem;"></i>
+                    <h4 style="color: #999;">Select a module to continue your journey</h4>
+                </div>
+                <div id="learning-activity-content" style="display: none;">
+                    <h2 id="learning-module-name" style="margin-bottom: 2rem; color: #333;">Module Name</h2>
+                    <div id="learning-curriculum-items" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                        <!-- Content loads here -->
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
 </main>
 
 <?php include 'content/footer.php'; ?>
