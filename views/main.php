@@ -102,7 +102,6 @@
     <div id="instructor-dashboard" class="dashboard-view view" style="width: 100%; max-width: 1000px; padding: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
             <h2>Instructor Dashboard</h2>
-            <button id="logout-btn-instructor" class="btn btn-outline" style="padding: 0.5rem 1rem;">Logout</button>
         </div>
         <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
             <div class="auth-card" style="padding: 2rem; margin: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 100%;">
@@ -134,7 +133,6 @@
                 <h2>Welcome, <span id="student-name-display">Student</span>!</h2>
                 <p>Explore available courses and start learning.</p>
             </div>
-            <button id="logout-btn-student" class="btn btn-outline" style="padding: 0.5rem 1rem;">Logout</button>
         </div>
         <div class="form-group" style="margin-bottom: 3rem;">
             <div style="position: relative;">
