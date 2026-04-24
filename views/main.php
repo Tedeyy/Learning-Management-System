@@ -148,7 +148,13 @@ include 'content/navbar.php';
 
         <!-- 2. Course Curriculum Manager (Second Level) -->
         <div id="course-manager-section" style="display: none;">
-            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+            <div class="tabs" style="display: flex; gap: 2rem; margin-bottom: 2rem; border-bottom: 2px solid #f0f0f0;">
+                <button class="instructor-tab active" data-tab="modules" style="padding: 1rem 0; background: none; border: none; font-weight: 600; color: var(--primary-color); border-bottom: 3px solid var(--primary-color); cursor: pointer; font-size: 1rem;">Modules</button>
+                <button class="instructor-tab" data-tab="enrollees" style="padding: 1rem 0; background: none; border: none; font-weight: 600; color: #999; border-bottom: 3px solid transparent; cursor: pointer; font-size: 1rem;">Enrollees</button>
+            </div>
+
+            <div id="tab-modules-view">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
                 <!-- Category Management -->
                 <div class="auth-card"
                     style="padding: 2rem; margin: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 100%;">
@@ -275,6 +281,40 @@ include 'content/navbar.php';
                         </div>
                     </div>
                 </div>
+                </div>
+            </div>
+
+            <div id="tab-enrollees-view" style="display: none;">
+                <div class="auth-card" style="padding: 2rem; margin: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.05); max-width: 100%;">
+                    <h3>Course Enrollees</h3>
+                    <p style="margin-bottom: 2rem; font-size: 0.9rem; opacity: 0.7;">View and manage students currently enrolled in this course.</p>
+                    
+                    <div id="enrollees-list-container">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="text-align: left; border-bottom: 2px solid #f0f0f0;">
+                                    <th style="padding: 1rem;">Student Name</th>
+                                    <th style="padding: 1rem;">Email Address</th>
+                                    <th style="padding: 1rem;">Joined At</th>
+                                    <th style="padding: 1rem; text-align: center;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="enrollees-list">
+                                <!-- Enrollees will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for Instructor (User Info & Progress) -->
+    <div id="instructor-modal-overlay" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+        <div class="auth-card" style="max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative; padding: 2.5rem;">
+            <button id="close-instructor-modal" style="position: absolute; top: 1.5rem; right: 1.5rem; border: none; background: none; cursor: pointer; color: #999;"><i data-lucide="x"></i></button>
+            <div id="instructor-modal-content">
+                <!-- Content will be loaded dynamically -->
             </div>
         </div>
     </div>
@@ -291,23 +331,27 @@ include 'content/navbar.php';
 
         <div style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: flex-start;">
             <!-- Left Sidebar: Enrolled Courses -->
-            <aside style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #eee; height: fit-content; position: sticky; top: 2rem;">
-                <h3 style="margin-bottom: 1.5rem; color: var(--secondary-color); font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+            <aside
+                style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #eee; height: fit-content; position: sticky; top: 2rem;">
+                <h3
+                    style="margin-bottom: 1.5rem; color: var(--secondary-color); font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="book-marked" style="width: 20px;"></i> My Enrolled Courses
                 </h3>
                 <div id="enrolled-courses-list" style="display: flex; flex-direction: column; gap: 10px;">
-                    <p style="color: #999; font-size: 0.9rem; text-align: center; padding: 1rem;">Explore the catalog to start learning!</p>
+                    <p style="color: #999; font-size: 0.9rem; text-align: center; padding: 1rem;">Explore the catalog to
+                        start learning!</p>
                 </div>
             </aside>
 
             <!-- Main Content: Course Catalog -->
             <section>
                 <div class="search-container" style="margin-bottom: 2rem;">
-                    <input type="text" id="course-search" placeholder="Search for courses, instructors, or topics..." 
-                           style="width: 100%; padding: 1rem 1.5rem; border-radius: 15px; border: 1px solid #eee; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                    <input type="text" id="course-search" placeholder="Search for courses..."
+                        style="width: 100%; padding: 1rem 1.5rem; border-radius: 15px; border: 1px solid #eee; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
                 </div>
 
-                <div id="student-courses-grid" class="course-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+                <div id="student-courses-grid" class="course-grid"
+                    style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
                     <!-- Courses will be loaded here -->
                 </div>
             </section>
@@ -318,7 +362,8 @@ include 'content/navbar.php';
     <div id="learning-view" class="dashboard-view view" style="width: 100%; max-width: 1200px; padding: 2rem;">
         <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <a href="#" id="back-to-catalog" style="display: flex; align-items: center; gap: 8px; color: var(--secondary-color); font-weight: 600; text-decoration: none; margin-bottom: 0.5rem;">
+                <a href="#" id="back-to-catalog"
+                    style="display: flex; align-items: center; gap: 8px; color: var(--secondary-color); font-weight: 600; text-decoration: none; margin-bottom: 0.5rem;">
                     <i data-lucide="chevron-left"></i> Back to Course Catalog
                 </a>
                 <h1 id="learning-course-title" style="color: var(--primary-color);">Course Title</h1>
@@ -327,8 +372,10 @@ include 'content/navbar.php';
 
         <div style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: flex-start;">
             <!-- Learning Sidebar: Modules -->
-            <aside style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #eee; height: fit-content; position: sticky; top: 2rem;">
-                <h3 style="margin-bottom: 1.5rem; color: var(--secondary-color); font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+            <aside
+                style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #eee; height: fit-content; position: sticky; top: 2rem;">
+                <h3
+                    style="margin-bottom: 1.5rem; color: var(--secondary-color); font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="layers" style="width: 20px;"></i> Modules
                 </h3>
                 <div id="learning-categories-list" style="display: flex; flex-direction: column; gap: 8px;">
@@ -338,8 +385,10 @@ include 'content/navbar.php';
 
             <!-- Learning Content: Activities -->
             <main>
-                <div id="learning-no-selection" style="background: white; border-radius: 20px; border: 1px solid #eee; padding: 4rem; text-align: center;">
-                    <i data-lucide="play-circle" style="width: 64px; height: 64px; color: #eee; margin-bottom: 1.5rem;"></i>
+                <div id="learning-no-selection"
+                    style="background: white; border-radius: 20px; border: 1px solid #eee; padding: 4rem; text-align: center;">
+                    <i data-lucide="play-circle"
+                        style="width: 64px; height: 64px; color: #eee; margin-bottom: 1.5rem;"></i>
                     <h4 style="color: #999;">Select a module to continue your journey</h4>
                 </div>
                 <div id="learning-activity-content" style="display: none;">

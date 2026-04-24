@@ -101,6 +101,42 @@ try {
             $stmt->bindParam(":student_id", $student_id);
             $stmt->execute();
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        } elseif ($type === 'course_enrollees') {
+            $course_id = $_GET['course_id'] ?? null;
+            $query = "SELECT u.id, u.first_name, u.last_name, u.email, e.enrolled_at 
+                      FROM enrollments e 
+                      JOIN users u ON e.student_id = u.id 
+                      WHERE e.course_id = :course_id 
+                      ORDER BY e.enrolled_at DESC";
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(":course_id", $course_id);
+            $stmt->execute();
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+        } elseif ($type === 'user_info') {
+            $user_id = $_GET['id'] ?? null;
+            $query = "SELECT id, first_name, last_name, middle_name, email, role, birthdate, gender, address, contact_number, created_at FROM users WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(":id", $user_id);
+            $stmt->execute();
+            echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
+        } elseif ($type === 'student_progress') {
+            $student_id = $_GET['student_id'] ?? null;
+            $course_id = $_GET['course_id'] ?? null;
+            
+            // Get Modules with progress for this specific student
+            $query = "SELECT ac.id, ac.name,
+                        (SELECT COUNT(*) FROM activities WHERE category_id = ac.id) as total_acts,
+                        (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_mats,
+                        (SELECT COUNT(*) FROM submissions s JOIN activities a ON s.activity_id = a.id WHERE a.category_id = ac.id AND s.student_id = :sid) as done_acts,
+                        (SELECT COUNT(*) FROM material_views mv JOIN learning_materials lm ON mv.material_id = lm.id WHERE lm.category_id = ac.id AND mv.student_id = :sid) as viewed_mats
+                      FROM activity_categories ac 
+                      WHERE ac.course_id = :cid 
+                      ORDER BY ac.created_at ASC";
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(":sid", $student_id);
+            $stmt->bindParam(":cid", $course_id);
+            $stmt->execute();
+            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         }
     } elseif ($method === 'POST') {
         $data = json_decode(file_get_contents("php://input"));
@@ -194,18 +230,28 @@ try {
             if ($stmt->execute()) { echo json_encode(["message" => "Activity updated"]); }
         }
     } elseif ($method === 'DELETE') {
-        $id = $_GET['id'] ?? null;
-        if ($type === 'categories') {
+        if ($type === 'enrollments') {
+            $course_id = $_GET['course_id'] ?? null;
+            $student_id = $_GET['student_id'] ?? null;
+            $query = "DELETE FROM enrollments WHERE course_id = :cid AND student_id = :sid";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":cid", $course_id);
+            $stmt->bindValue(":sid", $student_id);
+            if ($stmt->execute()) { echo json_encode(["message" => "Student unenrolled"]); }
+        } elseif ($type === 'categories') {
+            $id = $_GET['id'] ?? null;
             $query = "DELETE FROM activity_categories WHERE id = :id";
             $stmt = $db->prepare($query);
             $stmt->bindValue(":id", $id);
             if ($stmt->execute()) { echo json_encode(["message" => "Category deleted"]); }
         } elseif ($type === 'activities') {
+            $id = $_GET['id'] ?? null;
             $query = "DELETE FROM activities WHERE id = :id";
             $stmt = $db->prepare($query);
             $stmt->bindValue(":id", $id);
             if ($stmt->execute()) { echo json_encode(["message" => "Activity deleted"]); }
         } elseif ($type === 'materials') {
+            $id = $_GET['id'] ?? null;
             $query = "DELETE FROM learning_materials WHERE id = :id";
             $stmt = $db->prepare($query);
             $stmt->bindValue(":id", $id);
