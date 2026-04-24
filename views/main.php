@@ -6,7 +6,7 @@ include 'content/navbar.php';
 <main class="auth-container">
     <!-- Login View -->
     <div id="login-view" class="auth-card view active">
-        <h2>Welcome Back</h2>
+        <h2>Welcome</h2>
         <p>Login to your account to continue your learning journey.</p>
         <div id="login-message" style="margin-bottom: 1rem; text-align: center; font-size: 0.9rem; display: none"></div>
         <form id="login-form">
@@ -188,7 +188,8 @@ include 'content/navbar.php';
                             <h3 id="selected-category-name">Module Activities</h3>
                             <div style="display: flex; gap: 10px;">
                                 <button id="show-add-material" class="btn btn-outline"
-                                    style="padding: 0.5rem 1rem; font-size: 0.85rem; border-color: #2ecc71; color: #2ecc71;">+ Add Material</button>
+                                    style="padding: 0.5rem 1rem; font-size: 0.85rem; border-color: #2ecc71; color: #2ecc71;">+
+                                    Add Material</button>
                                 <button id="show-add-activity" class="btn btn-outline"
                                     style="padding: 0.5rem 1rem; font-size: 0.85rem;">+ Add Activity</button>
                             </div>
@@ -209,11 +210,13 @@ include 'content/navbar.php';
                                 </div>
                                 <div class="form-group">
                                     <label>Description (Optional)</label>
-                                    <textarea id="mat-desc" placeholder="What is this resource for?" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; height: 80px;"></textarea>
+                                    <textarea id="mat-desc" placeholder="What is this resource for?"
+                                        style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; height: 80px;"></textarea>
                                 </div>
                                 <div class="form-group">
                                     <label>Type</label>
-                                    <select id="mat-type" class="form-control" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd;">
+                                    <select id="mat-type" class="form-control"
+                                        style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd;">
                                         <option value="link">External Link</option>
                                         <option value="pdf">PDF Document</option>
                                         <option value="video">Video Resource</option>
@@ -221,8 +224,10 @@ include 'content/navbar.php';
                                     </select>
                                 </div>
                                 <div style="display: flex; gap: 10px;">
-                                    <button type="submit" class="btn btn-primary" style="flex: 1; background: #27ae60;">Save Material</button>
-                                    <button type="button" id="cancel-material" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                                    <button type="submit" class="btn btn-primary"
+                                        style="flex: 1; background: #27ae60;">Save Material</button>
+                                    <button type="button" id="cancel-material" class="btn btn-outline"
+                                        style="flex: 1;">Cancel</button>
                                 </div>
                             </form>
                         </div>
@@ -231,14 +236,16 @@ include 'content/navbar.php';
                         <div id="add-activity-container"
                             style="display: none; background: #f9f9fb; padding: 1.5rem; border-radius: 15px; margin-bottom: 1.5rem; border: 1px solid #eee;">
                             <form id="add-activity-form">
-                                <h4 style="margin-bottom: 1rem; color: var(--secondary-color);">Add Google Form Activity</h4>
+                                <h4 style="margin-bottom: 1rem; color: var(--secondary-color);">Add Google Form Activity
+                                </h4>
                                 <div class="form-group">
                                     <label>Activity Title</label>
                                     <input type="text" id="act-title" placeholder="e.g., Week 1 Quiz" required>
                                 </div>
                                 <div class="form-group">
                                     <label>Google Form Link</label>
-                                    <input type="url" id="act-url" placeholder="https://docs.google.com/forms/..." required>
+                                    <input type="url" id="act-url" placeholder="https://docs.google.com/forms/..."
+                                        required>
                                 </div>
                                 <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 1rem;">
                                     <div class="form-group">
@@ -247,15 +254,18 @@ include 'content/navbar.php';
                                     </div>
                                     <div class="form-group">
                                         <label>Description</label>
-                                        <input type="text" id="act-desc-simple" placeholder="Short instruction..." style="width: 100%;">
+                                        <input type="text" id="act-desc-simple" placeholder="Short instruction..."
+                                            style="width: 100%;">
                                     </div>
                                 </div>
                                 <div class="form-group" style="display: none;">
                                     <input type="hidden" id="act-type" value="google_form">
                                 </div>
                                 <div style="display: flex; gap: 10px;">
-                                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save Activity</button>
-                                    <button type="button" id="cancel-activity" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save
+                                        Activity</button>
+                                    <button type="button" id="cancel-activity" class="btn btn-outline"
+                                        style="flex: 1;">Cancel</button>
                                 </div>
                             </form>
                         </div>
@@ -270,23 +280,38 @@ include 'content/navbar.php';
     </div>
 
     <!-- Student Dashboard -->
-    <div id="student-dashboard" class="dashboard-view view" style="width: 100%; max-width: 1000px; padding: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <div id="student-dashboard" class="dashboard-view view" style="width: 100%; max-width: 1200px; padding: 2rem;">
+        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <h2>Welcome, <span id="student-name-display">Student</span>!</h2>
-                <p>Explore available courses and start learning.</p>
+                <h1 style="color: var(--primary-color);">Welcome, <span id="student-name-display">Learner</span>!</h1>
+                <p style="color: #666;">What do you want to learn today?</p>
             </div>
+            <button class="logout-btn btn btn-outline" style="border-color: #ff4d4d; color: #ff4d4d;">Logout</button>
+        </header>
+
+        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: flex-start;">
+            <!-- Left Sidebar: Enrolled Courses -->
+            <aside style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #eee; height: fit-content; position: sticky; top: 2rem;">
+                <h3 style="margin-bottom: 1.5rem; color: var(--secondary-color); font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
+                    <i data-lucide="book-marked" style="width: 20px;"></i> My Enrolled Courses
+                </h3>
+                <div id="enrolled-courses-list" style="display: flex; flex-direction: column; gap: 10px;">
+                    <p style="color: #999; font-size: 0.9rem; text-align: center; padding: 1rem;">Explore the catalog to start learning!</p>
+                </div>
+            </aside>
+
+            <!-- Main Content: Course Catalog -->
+            <section>
+                <div class="search-container" style="margin-bottom: 2rem;">
+                    <input type="text" id="course-search" placeholder="Search for courses, instructors, or topics..." 
+                           style="width: 100%; padding: 1rem 1.5rem; border-radius: 15px; border: 1px solid #eee; font-size: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.05);">
+                </div>
+
+                <div id="student-courses-grid" class="course-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+                    <!-- Courses will be loaded here -->
+                </div>
+            </section>
         </div>
-        <div class="form-group" style="margin-bottom: 3rem;">
-            <div style="position: relative;">
-                <input type="text" id="course-search" placeholder="Search for courses..."
-                    style="width: 100%; padding: 1.2rem 1.5rem 1.2rem 3rem; font-size: 1.1rem; border-radius: 50px; border: 2px solid #eee;">
-                <i data-lucide="search"
-                    style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #999;"></i>
-            </div>
-        </div>
-        <div id="student-courses-grid" class="courses-grid"
-            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;"></div>
     </div>
 </main>
 

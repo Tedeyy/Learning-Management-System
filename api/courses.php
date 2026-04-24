@@ -23,11 +23,18 @@ if ($method === 'GET') {
     if ($type === 'courses') {
         $instructor_id = $_GET['instructor_id'] ?? null;
         $search = $_GET['search'] ?? null;
-        $query = "SELECT c.id, c.title, c.description, c.created_at, u.first_name, u.last_name as instructor_name 
-                  FROM courses c JOIN users u ON c.instructor_id = u.id";
+        $student_id = $_GET['student_id'] ?? null;
+        
+        $query = "SELECT c.id, c.title, c.description, c.created_at, u.first_name, u.last_name as instructor_name";
+        if ($student_id) { $query .= ", (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND student_id = :sid) as is_enrolled"; }
+        $query .= " FROM courses c JOIN users u ON c.instructor_id = u.id";
+        
         $params = [];
         if ($instructor_id) { $query .= " WHERE c.instructor_id = :instructor_id"; $params[':instructor_id'] = $instructor_id; }
         elseif ($search) { $query .= " WHERE c.title LIKE :search OR c.description LIKE :search"; $params[':search'] = "%$search%"; }
+        
+        if ($student_id) { $params[':sid'] = $student_id; }
+        
         $query .= " ORDER BY c.created_at DESC";
         try {
             $stmt = $db->prepare($query);
@@ -54,6 +61,18 @@ if ($method === 'GET') {
         $query = "SELECT * FROM learning_materials WHERE course_id = :course_id ORDER BY created_at ASC";
         $stmt = $db->prepare($query);
         $stmt->bindParam(":course_id", $course_id);
+        $stmt->execute();
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    } elseif ($type === 'enrollments') {
+        $student_id = $_GET['student_id'] ?? null;
+        $query = "SELECT e.course_id, e.enrolled_at, c.title, c.description, u.first_name, u.last_name as instructor_name 
+                  FROM enrollments e 
+                  JOIN courses c ON e.course_id = c.id 
+                  JOIN users u ON c.instructor_id = u.id 
+                  WHERE e.student_id = :student_id 
+                  ORDER BY e.enrolled_at DESC";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(":student_id", $student_id);
         $stmt->execute();
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
@@ -98,6 +117,17 @@ if ($method === 'GET') {
         $stmt->bindValue(":type", $data->material_type ?? 'link');
         $stmt->bindValue(":now", $now);
         if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material added"]); }
+    } elseif ($type === 'enrollments') {
+        $query = "INSERT INTO enrollments (course_id, student_id) VALUES (:course_id, :student_id)";
+        $stmt = $db->prepare($query);
+        $stmt->bindValue(":course_id", $data->course_id);
+        $stmt->bindValue(":student_id", $data->student_id);
+        try {
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Enrolled successfully"]); }
+        } catch (PDOException $e) {
+            if ($e->getCode() == 23000) { http_response_code(400); echo json_encode(["message" => "Already enrolled"]); }
+            else { http_response_code(500); echo json_encode(["message" => "Enrolment failed"]); }
+        }
     }
 } elseif ($method === 'PUT') {
     $data = json_decode(file_get_contents("php://input"));
@@ -132,7 +162,6 @@ if ($method === 'GET') {
 } elseif ($method === 'DELETE') {
     $id = $_GET['id'] ?? null;
     if (!$id) { http_response_code(400); echo json_encode(["message" => "ID required"]); exit(); }
-    
     if ($type === 'categories') {
         $query = "DELETE FROM activity_categories WHERE id = :id";
         $stmt = $db->prepare($query);
