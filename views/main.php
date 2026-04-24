@@ -186,8 +186,41 @@ include 'content/navbar.php';
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <h3 id="selected-category-name">Module Activities</h3>
-                            <button id="show-add-activity" class="btn btn-outline"
-                                style="padding: 0.5rem 1rem; font-size: 0.85rem;">+ Add Activity</button>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="show-add-material" class="btn btn-outline"
+                                    style="padding: 0.5rem 1rem; font-size: 0.85rem; border-color: #2ecc71; color: #2ecc71;">+ Add Material</button>
+                                <button id="show-add-activity" class="btn btn-outline"
+                                    style="padding: 0.5rem 1rem; font-size: 0.85rem;">+ Add Activity</button>
+                            </div>
+                        </div>
+
+                        <!-- Add Material Form -->
+                        <div id="add-material-container"
+                            style="display: none; background: #ebfaf0; padding: 1.5rem; border-radius: 15px; margin-bottom: 1.5rem; border: 1px solid #d4edda;">
+                            <form id="add-material-form">
+                                <h4 style="margin-bottom: 1rem; color: #27ae60;">Add Learning Material</h4>
+                                <div class="form-group">
+                                    <label>Material Title</label>
+                                    <input type="text" id="mat-title" placeholder="e.g., Course Syllabus PDF" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Resource URL / Link</label>
+                                    <input type="url" id="mat-url" placeholder="https://example.com/file.pdf" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Type</label>
+                                    <select id="mat-type" class="form-control" style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd;">
+                                        <option value="link">External Link</option>
+                                        <option value="pdf">PDF Document</option>
+                                        <option value="video">Video Resource</option>
+                                        <option value="drive">Google Drive</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <button type="submit" class="btn btn-primary" style="flex: 1; background: #27ae60;">Save Material</button>
+                                    <button type="button" id="cancel-material" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                                </div>
+                            </form>
                         </div>
 
                         <!-- Add Activity Form -->

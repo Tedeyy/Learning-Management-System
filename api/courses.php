@@ -16,7 +16,7 @@ if ($db === null) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$type = $_GET['type'] ?? 'courses'; // courses, categories, activities
+$type = $_GET['type'] ?? 'courses'; // courses, categories, activities, materials
 
 if ($method === 'GET') {
     if ($type === 'courses') {
@@ -61,6 +61,15 @@ if ($method === 'GET') {
         $stmt->bindParam(":category_id", $category_id);
         $stmt->execute();
         echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    } elseif ($type === 'materials') {
+        $course_id = $_GET['course_id'] ?? null;
+        if (!$course_id) { http_response_code(400); echo json_encode(["message" => "Course ID required"]); exit(); }
+
+        $query = "SELECT * FROM learning_materials WHERE course_id = :course_id ORDER BY created_at DESC";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(":course_id", $course_id);
+        $stmt->execute();
+        echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     }
 } elseif ($method === 'POST') {
     $data = json_decode(file_get_contents("php://input"));
@@ -92,8 +101,19 @@ if ($method === 'GET') {
             $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
             $stmt->bindValue(":description", htmlspecialchars(strip_tags($data->description ?? '')));
             $stmt->bindValue(":type", $data->activity_type ?? 'reading');
-            $stmt->bindValue(":seq", $data->sequence_number ?? 1);
+            $stmt->bindValue(":seq", !empty($data->sequence_number) ? $data->sequence_number : null);
             if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Activity created"]); }
+        }
+    } elseif ($type === 'materials') {
+        if (!empty($data->title) && !empty($data->url) && !empty($data->course_id)) {
+            $query = "INSERT INTO learning_materials (course_id, title, url, material_type) 
+                      VALUES (:course_id, :title, :url, :type)";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":course_id", $data->course_id);
+            $stmt->bindValue(":title", htmlspecialchars(strip_tags($data->title)));
+            $stmt->bindValue(":url", htmlspecialchars(strip_tags($data->url)));
+            $stmt->bindValue(":type", $data->material_type ?? 'link');
+            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material added"]); }
         }
     }
 }

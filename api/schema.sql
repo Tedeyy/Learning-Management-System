@@ -57,7 +57,7 @@ CREATE TABLE activities (
     description TEXT,
     activity_type VARCHAR(50) NOT NULL,
     content_url TEXT,
-    sequence_number INT NOT NULL,
+    sequence_number INT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
     FOREIGN KEY (category_id) REFERENCES activity_categories(id) ON DELETE SET NULL,
