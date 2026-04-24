@@ -2,8 +2,6 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 include_once 'config.php';
 
@@ -23,16 +21,11 @@ if (
     $data && 
     !empty($data->first_name) && 
     !empty($data->last_name) && 
-    !empty($data->birthdate) && 
-    !empty($data->gender) && 
-    !empty($data->address) && 
-    !empty($data->contact_number) && 
     !empty($data->email) && 
-    !empty($data->password) &&
+    !empty($data->password) && 
     !empty($data->role)
 ) {
     try {
-        // Check if email already exists
         $check_query = "SELECT id FROM users WHERE email = :email";
         $check_stmt = $db->prepare($check_query);
         $check_stmt->bindParam(":email", $data->email);
@@ -45,25 +38,22 @@ if (
         }
 
         $query = "INSERT INTO users (
-                    first_name, last_name, middle_name, 
-                    birthdate, gender, address, contact_number, 
-                    email, password, role
+                    first_name, last_name, middle_name, birthdate, 
+                    gender, address, contact_number, email, password, role
                 ) VALUES (
-                    :first_name, :last_name, :middle_name, 
-                    :birthdate, :gender, :address, :contact_number, 
-                    :email, :password, :role
+                    :first_name, :last_name, :middle_name, :birthdate, 
+                    :gender, :address, :contact_number, :email, :password, :role
                 )";
         
         $stmt = $db->prepare($query);
 
-        // Sanitize
         $first_name = htmlspecialchars(strip_tags($data->first_name));
         $last_name = htmlspecialchars(strip_tags($data->last_name));
         $middle_name = !empty($data->middle_name) ? htmlspecialchars(strip_tags($data->middle_name)) : null;
-        $birthdate = $data->birthdate;
-        $gender = htmlspecialchars(strip_tags($data->gender));
-        $address = htmlspecialchars(strip_tags($data->address));
-        $contact_number = htmlspecialchars(strip_tags($data->contact_number));
+        $birthdate = $data->birthdate ?? null;
+        $gender = $data->gender ?? null;
+        $address = $data->address ?? null;
+        $contact_number = $data->contact_number ?? null;
         $email = htmlspecialchars(strip_tags($data->email));
         $password = password_hash($data->password, PASSWORD_BCRYPT);
         $role = $data->role;
@@ -87,11 +77,10 @@ if (
             echo json_encode(["message" => "Unable to create account."]);
         }
     } catch (Throwable $e) {
-        error_log("Registration Error: " . $e->getMessage());
         http_response_code(500);
-        echo json_encode(["message" => "Internal server error: " . $e->getMessage()]);
+        echo json_encode(["message" => "Internal error: " . $e->getMessage()]);
     }
 } else {
     http_response_code(400);
-    echo json_encode(["message" => "Incomplete data. Please fill all required fields."]);
+    echo json_encode(["message" => "Incomplete data."]);
 }

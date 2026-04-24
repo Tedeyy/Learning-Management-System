@@ -2,8 +2,6 @@
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 
 include_once 'config.php';
 session_start();
@@ -39,9 +37,7 @@ if ($data && !empty($data->email) && !empty($data->password)) {
                     "message" => "Login successful.",
                     "user" => [
                         "id" => $row['id'],
-                        "first_name" => $row['first_name'],
-                        "last_name" => $row['last_name'],
-                        "email" => $row['email'],
+                        "name" => $row['first_name'] . ' ' . $row['last_name'],
                         "role" => $row['role']
                     ]
                 ]);
@@ -54,9 +50,8 @@ if ($data && !empty($data->email) && !empty($data->password)) {
             echo json_encode(["message" => "User not found."]);
         }
     } catch (Throwable $e) {
-        error_log("Login Error: " . $e->getMessage());
         http_response_code(500);
-        echo json_encode(["message" => "Internal server error: " . $e->getMessage()]);
+        echo json_encode(["message" => "Internal error: " . $e->getMessage()]);
     }
 } else {
     http_response_code(400);

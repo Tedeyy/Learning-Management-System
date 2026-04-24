@@ -1,34 +1,71 @@
 CREATE DATABASE IF NOT EXISTS eduready_db;
 USE eduready_db;
 
--- 1. Users Table (Now includes a password column for your own auth)
-CREATE TABLE IF NOT EXISTS users (
+-- 1. Users Table
+CREATE TABLE users (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    last_name VARCHAR(255) NOT NULL,
     first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
     middle_name VARCHAR(255),
-    birthdate DATE NOT NULL,
-    gender VARCHAR(255) NOT NULL,
-    address VARCHAR(255) NOT NULL,
-    contact_number VARCHAR(255) NOT NULL,
+    birthdate DATE,
+    gender VARCHAR(20),
+    address TEXT,
+    contact_number VARCHAR(20),
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL CHECK (role IN ('student', 'instructor')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Activities Table
-CREATE TABLE IF NOT EXISTS activities (
+-- 2. Courses Table
+CREATE TABLE courses (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    instructor_id INT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (instructor_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 3. Enrollments Table
+CREATE TABLE enrollments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT,
+    student_id INT,
+    enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(course_id, student_id) 
+);
+
+-- 4. Activity Categories
+CREATE TABLE activity_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    course_id INT,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
+);
+
+-- 5. Activities Table
+CREATE TABLE activities (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    category_id INT,
+    course_id INT,
     title VARCHAR(255) NOT NULL,
     description TEXT,
     activity_type VARCHAR(50) NOT NULL,
     content_url TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    sequence_number INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES activity_categories(id) ON DELETE SET NULL,
+    UNIQUE(course_id, sequence_number)
 );
 
--- 3. Submissions / Progress Tracker Table
-CREATE TABLE IF NOT EXISTS submissions (
+-- 6. Submissions / Progress Tracker Table
+CREATE TABLE submissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     activity_id INT,
     student_id INT,
@@ -42,8 +79,8 @@ CREATE TABLE IF NOT EXISTS submissions (
     UNIQUE(activity_id, student_id) 
 );
 
--- 4. Comments Table
-CREATE TABLE IF NOT EXISTS comments (
+-- 7. Comments Table
+CREATE TABLE comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     activity_id INT,
     user_id INT,
