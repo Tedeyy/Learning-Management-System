@@ -232,15 +232,17 @@ try {
             if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material viewed"]); }
         } elseif ($type === 'comments') {
             try {
-                $query = "INSERT INTO comments (activity_id, material_id, user_id, content, created_at) VALUES (:aid, :mid, :uid, :content, :now)";
+                $query = "INSERT INTO comments (activity_id, material_id, user_id, parent_id, content, created_at) VALUES (:aid, :mid, :uid, :pid, :content, :now)";
                 $stmt = $db->prepare($query);
                 
                 // Ensure activity_id and material_id are null if not present
                 $aid = isset($data->activity_id) ? $data->activity_id : null;
                 $mid = isset($data->material_id) ? $data->material_id : null;
+                $pid = isset($data->parent_id) ? $data->parent_id : null;
                 
                 $stmt->bindValue(":aid", $aid, $aid === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
                 $stmt->bindValue(":mid", $mid, $mid === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
+                $stmt->bindValue(":pid", $pid, $pid === null ? PDO::PARAM_NULL : PDO::PARAM_INT);
                 $stmt->bindValue(":uid", $data->user_id, PDO::PARAM_INT);
                 $stmt->bindValue(":content", htmlspecialchars(strip_tags($data->content)));
                 $stmt->bindValue(":now", $now);
@@ -325,6 +327,14 @@ try {
             $stmt = $db->prepare($query);
             $stmt->bindValue(":id", $id);
             if ($stmt->execute()) { echo json_encode(["message" => "Material deleted"]); }
+        } elseif ($type === 'comments') {
+            $id = $_GET['id'] ?? null;
+            $user_id = $_GET['user_id'] ?? null;
+            $query = "DELETE FROM comments WHERE id = :id AND user_id = :uid";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $id);
+            $stmt->bindValue(":uid", $user_id);
+            if ($stmt->execute()) { echo json_encode(["message" => "Comment deleted"]); }
         }
     }
 } catch (Exception $e) {

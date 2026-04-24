@@ -78,35 +78,130 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (!Array.isArray(comments)) return;
             
-            container.innerHTML = comments.length === 0 
-                ? '<p style="font-size: 0.8rem; color: #999; text-align: center; padding: 1rem;">No discussions yet. Be the first to comment!</p>' 
-                : '';
+            container.innerHTML = '';
+            if (comments.length === 0) {
+                container.innerHTML = '<p style="font-size: 0.8rem; color: #999; text-align: center; padding: 1rem;">No discussions yet. Be the first to comment!</p>';
+                return;
+            }
+
+            // Organize comments into a tree
+            const commentMap = {};
+            const rootComments = [];
             
             comments.forEach(c => {
+                c.replies = [];
+                commentMap[c.id] = c;
+            });
+            
+            comments.forEach(c => {
+                if (c.parent_id && commentMap[c.parent_id]) {
+                    commentMap[c.parent_id].replies.push(c);
+                } else {
+                    rootComments.push(c);
+                }
+            });
+
+            const renderComment = (c, depth = 0) => {
                 const date = new Date(c.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 const initials = c.user_name.split(' ').map(n => n[0]).join('').toUpperCase();
                 const isInstructor = c.user_role === 'instructor';
+                const isOwner = currentUser && parseInt(currentUser.id) === parseInt(c.user_id);
                 
                 const commentEl = document.createElement('div');
-                commentEl.style.display = 'flex';
-                commentEl.style.gap = '12px';
-                commentEl.style.marginBottom = '1rem';
-                commentEl.style.paddingBottom = '1rem';
-                commentEl.style.borderBottom = '1px solid #f9f9f9';
+                commentEl.className = 'comment-item';
+                commentEl.style.marginLeft = depth > 0 ? '1.5rem' : '0';
+                commentEl.style.borderLeft = depth > 0 ? '2px solid #f1f5f9' : 'none';
+                commentEl.style.paddingLeft = depth > 0 ? '1rem' : '0';
+                commentEl.style.marginBottom = '1.5rem';
                 
                 commentEl.innerHTML = `
-                    <div style="width: 32px; height: 32px; background: ${isInstructor ? 'var(--primary-color)' : '#f1f5f9'}; color: ${isInstructor ? 'white' : '#64748b'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0;">${initials}</div>
-                    <div style="flex: 1;">
-                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                            <span style="font-weight: 700; font-size: 0.85rem; color: #333;">${c.user_name}</span>
-                            ${isInstructor ? '<span style="background: #eef2ff; color: var(--primary-color); font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">Instructor</span>' : ''}
-                            <span style="color: #999; font-size: 0.7rem;">${date}</span>
+                    <div style="display: flex; gap: 12px;">
+                        <div style="width: 32px; height: 32px; background: ${isInstructor ? 'var(--primary-color)' : '#f1f5f9'}; color: ${isInstructor ? 'white' : '#64748b'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 700; flex-shrink: 0;">${initials}</div>
+                        <div style="flex: 1;">
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                <span style="font-weight: 700; font-size: 0.85rem; color: #333;">${c.user_name}</span>
+                                ${isInstructor ? '<span style="background: #eef2ff; color: var(--primary-color); font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; text-transform: uppercase;">Instructor</span>' : ''}
+                                <span style="color: #999; font-size: 0.7rem;">${date}</span>
+                            </div>
+                            <p style="font-size: 0.85rem; color: #4b5563; line-height: 1.5; white-space: pre-wrap; margin-bottom: 0.5rem;">${c.content}</p>
+                            
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <button class="reply-trigger" style="background: none; border: none; color: var(--primary-color); font-size: 0.75rem; font-weight: 700; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px;"><i data-lucide="reply" style="width: 12px;"></i> Reply</button>
+                                ${isOwner ? `<button class="delete-comment-btn" style="background: none; border: none; color: #ff4d4d; font-size: 0.75rem; font-weight: 600; cursor: pointer; padding: 0; display: flex; align-items: center; gap: 4px;"><i data-lucide="trash-2" style="width: 12px;"></i> Delete</button>` : ''}
+                            </div>
+                            
+                            <!-- Hidden Reply Input Area -->
+                            <div class="reply-input-container" style="display: none; margin-top: 1rem; gap: 10px;">
+                                <input type="text" class="reply-field" placeholder="Reply to ${c.user_name}..." style="flex: 1; padding: 8px 12px; border-radius: 8px; border: 1px solid #eee; font-size: 0.8rem; background: #fafafa;">
+                                <button class="post-reply-btn btn btn-primary" style="padding: 5px 12px; border-radius: 8px; font-size: 0.75rem;">Post</button>
+                                <button class="cancel-reply-btn" style="background: none; border: none; color: #999; font-size: 0.75rem; cursor: pointer;">Cancel</button>
+                            </div>
                         </div>
-                        <p style="font-size: 0.85rem; color: #4b5563; line-height: 1.5; white-space: pre-wrap;">${c.content}</p>
                     </div>
                 `;
+                
+                const trigger = commentEl.querySelector('.reply-trigger');
+                const inputArea = commentEl.querySelector('.reply-input-container');
+                const replyField = commentEl.querySelector('.reply-field');
+                const postBtn = commentEl.querySelector('.post-reply-btn');
+                const cancelBtn = commentEl.querySelector('.cancel-reply-btn');
+                const deleteBtn = commentEl.querySelector('.delete-comment-btn');
+                
+                trigger.addEventListener('click', () => {
+                    inputArea.style.display = 'flex';
+                    trigger.parentElement.style.display = 'none';
+                    replyField.focus();
+                });
+                
+                cancelBtn.addEventListener('click', () => {
+                    inputArea.style.display = 'none';
+                    trigger.parentElement.style.display = 'flex';
+                    replyField.value = '';
+                });
+                
+                postBtn.addEventListener('click', async () => {
+                    const content = replyField.value.trim();
+                    if (!content) return;
+                    
+                    postBtn.disabled = true;
+                    const data = { 
+                        user_id: currentUser.id, 
+                        content: content,
+                        parent_id: c.id
+                    };
+                    data[`${targetType}_id`] = targetId;
+                    
+                    try {
+                        const res = await fetch('../api/courses.php?type=comments', { method: 'POST', body: JSON.stringify(data) });
+                        if (res.ok) {
+                            loadComments(targetId, targetType, container);
+                        }
+                    } catch (e) {} finally { postBtn.disabled = false; }
+                });
+
+                if (deleteBtn) {
+                    deleteBtn.addEventListener('click', async () => {
+                        if (confirm('Are you sure you want to delete this comment? All replies will also be removed.')) {
+                            try {
+                                const res = await fetch(`../api/courses.php?type=comments&id=${c.id}&user_id=${currentUser.id}`, { method: 'DELETE' });
+                                if (res.ok) {
+                                    loadComments(targetId, targetType, container);
+                                }
+                            } catch (e) {}
+                        }
+                    });
+                }
+                
                 container.appendChild(commentEl);
-            });
+                
+                // Recursively render replies
+                if (c.replies.length > 0) {
+                    c.replies.forEach(reply => renderComment(reply, depth + 1));
+                }
+            };
+            
+            rootComments.forEach(c => renderComment(c));
+            if(typeof lucide !== 'undefined') lucide.createIcons();
         } catch (e) {
             container.innerHTML = '<p style="color: red; font-size: 0.7rem;">Error loading comments.</p>';
         }
@@ -119,7 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
         section.style.paddingTop = '1.5rem';
         section.style.borderTop = '1px solid #eee';
         
-        // Prevent click events in the comment section from bubbling up to the card
         section.addEventListener('click', (e) => {
             e.stopPropagation();
         });
@@ -129,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <i data-lucide="message-square" style="width: 16px;"></i>
                 <h6 style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">Public Discussion</h6>
             </div>
-            <div class="comments-list-container" style="max-height: 300px; overflow-y: auto; margin-bottom: 1.5rem; padding-right: 5px;">
+            <div class="comments-list-container" style="margin-bottom: 1.5rem; padding-right: 5px;">
                 <p style="text-align: center; color: #999; font-size: 0.8rem;">Loading discussion...</p>
             </div>
             <div class="comment-input-area" style="display: flex; gap: 10px;">
@@ -450,7 +544,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadLearningCurriculum() {
         learningNoSelection.style.display = 'none'; learningActivityContent.style.display = 'block';
-        document.getElementById('learning-module-name').textContent = selectedCategory.name;
+        const moduleNameEl = document.getElementById('learning-module-name');
+        if(moduleNameEl) moduleNameEl.textContent = selectedCategory.name;
         learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading lessons...</p>';
         try {
             const actRes = await fetch(`../api/courses.php?type=activities&category_id=${selectedCategory.id}&student_id=${currentUser.id}`);
@@ -504,7 +599,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     updateNavbar();
-    if (currentUser) { if (currentUser.role === 'instructor') { switchView(instructorDashboard); loadInstructorCourses(); } else { switchView(studentDashboard); const nameDisplay = document.getElementById('student-name-display'); if(nameDisplay) nameDisplay.textContent = currentUser.name.split(' ')[0]; loadStudentCourses(); loadEnrolledCourses(); } }
+    if (currentUser) { 
+        if (currentUser.role === 'instructor') { 
+            switchView(instructorDashboard); loadInstructorCourses(); 
+        } else { 
+            switchView(studentDashboard); 
+            const nameDisplay = document.getElementById('student-name-display'); 
+            if(nameDisplay && currentUser.name) nameDisplay.textContent = currentUser.name.split(' ')[0]; 
+            loadStudentCourses(); loadEnrolledCourses(); 
+        } 
+    }
     document.querySelectorAll('.logout-btn').forEach(btn => btn.addEventListener('click', () => { localStorage.removeItem('currentUser'); window.location.reload(); }));
     if(loginForm) { loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { email: document.getElementById('login-email').value, password: document.getElementById('login-password').value }; const response = await fetch('../api/login.php', { method: 'POST', body: JSON.stringify(data) }); const result = await response.json(); if (response.ok) { localStorage.setItem('currentUser', JSON.stringify(result.user)); window.location.reload(); } }); }
     if(addCourseForm) { addCourseForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { instructor_id: currentUser.id, title: document.getElementById('course-title').value, description: document.getElementById('course-desc').value }; const response = await fetch('../api/courses.php?type=courses', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { loadInstructorCourses(); addCourseForm.reset(); } }); }
