@@ -231,36 +231,31 @@ include 'content/navbar.php';
                         <div id="add-activity-container"
                             style="display: none; background: #f9f9fb; padding: 1.5rem; border-radius: 15px; margin-bottom: 1.5rem; border: 1px solid #eee;">
                             <form id="add-activity-form">
+                                <h4 style="margin-bottom: 1rem; color: var(--secondary-color);">Add Google Form Activity</h4>
                                 <div class="form-group">
                                     <label>Activity Title</label>
-                                    <input type="text" id="act-title" placeholder="Lesson 1: Installation" required>
-                                </div>
-                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                                    <div class="form-group">
-                                        <label>Type</label>
-                                        <select id="act-type" class="form-control"
-                                            style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd;">
-                                            <option value="reading">Reading</option>
-                                            <option value="video">Video</option>
-                                            <option value="assignment">Assignment</option>
-                                            <option value="quiz">Quiz</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Sequence #</label>
-                                        <input type="number" id="act-sequence" value="1" required>
-                                    </div>
+                                    <input type="text" id="act-title" placeholder="e.g., Week 1 Quiz" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Content URL / Description</label>
-                                    <textarea id="act-desc"
-                                        style="width: 100%; padding: 0.8rem; border-radius: 10px; border: 1px solid #ddd; height: 80px;"></textarea>
+                                    <label>Google Form Link</label>
+                                    <input type="url" id="act-url" placeholder="https://docs.google.com/forms/..." required>
+                                </div>
+                                <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 1rem;">
+                                    <div class="form-group">
+                                        <label>Sequence #</label>
+                                        <input type="number" id="act-sequence" value="0" style="width: 100%;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Description</label>
+                                        <input type="text" id="act-desc-simple" placeholder="Short instruction..." style="width: 100%;">
+                                    </div>
+                                </div>
+                                <div class="form-group" style="display: none;">
+                                    <input type="hidden" id="act-type" value="google_form">
                                 </div>
                                 <div style="display: flex; gap: 10px;">
-                                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save
-                                        Activity</button>
-                                    <button type="button" id="cancel-activity" class="btn btn-outline"
-                                        style="flex: 1;">Cancel</button>
+                                    <button type="submit" class="btn btn-primary" style="flex: 1;">Save Activity</button>
+                                    <button type="button" id="cancel-activity" class="btn btn-outline" style="flex: 1;">Cancel</button>
                                 </div>
                             </form>
                         </div>

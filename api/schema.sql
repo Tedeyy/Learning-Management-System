@@ -84,10 +84,14 @@ CREATE TABLE comments (
     id INT AUTO_INCREMENT PRIMARY KEY,
     activity_id INT,
     user_id INT,
+    parent_id INT NULL DEFAULT NULL,
     content TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    visibility VARCHAR(20) DEFAULT 'public' CHECK (visibility IN ('public', 'private')),
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     FOREIGN KEY (activity_id) REFERENCES activities(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE
 );
 
 -- 8. Learning Materials
@@ -98,11 +102,12 @@ CREATE TABLE learning_materials (
     description TEXT,
     url TEXT NOT NULL,
     material_type VARCHAR(50) DEFAULT 'link',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     FOREIGN KEY (course_id) REFERENCES courses(id) ON DELETE CASCADE
 );
 
--- 9. Viewed Materials
+-- 9. Viewed Materials  
 CREATE TABLE material_views (
     id INT AUTO_INCREMENT PRIMARY KEY,
     material_id INT NOT NULL,
