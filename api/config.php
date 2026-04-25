@@ -1,7 +1,15 @@
 <?php
-// Suppress error display to prevent breaking JSON responses
-ini_set('display_errors', 0);
-ini_set('log_errors', 1);
+// Environment Detection
+$is_local = in_array($_SERVER['REMOTE_ADDR'], ['127.0.0.1', '::1']) || ($_SERVER['HTTP_HOST'] === 'localhost');
+
+if ($is_local) {
+    ini_set('display_errors', 1);
+    ini_set('log_errors', 1);
+    error_reporting(E_ALL);
+} else {
+    ini_set('display_errors', 0);
+    ini_set('log_errors', 1);
+}
 
 function loadEnv($path) {
     if (!file_exists($path)) return;

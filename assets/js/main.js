@@ -32,10 +32,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const instructorModalContent = document.getElementById('instructor-modal-content');
     const closeInstructorModal = document.getElementById('close-instructor-modal');
 
-    // State
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
     let selectedCourse = null;
     let selectedCategory = null;
+
+    // --- Mobile Menu Toggle logic ---
+    const menuToggle = document.getElementById('mobile-menu');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', () => {
+            console.log('Mobile menu toggled');
+            menuToggle.classList.toggle('active');
+            // Only toggle active on the menu that is currently supposed to be visible
+            document.querySelectorAll('.nav-links').forEach(nav => {
+                const isVisible = window.getComputedStyle(nav).display !== 'none';
+                if (isVisible || nav.classList.contains('active')) {
+                    nav.classList.toggle('active');
+                }
+            });
+        });
+
+        // Close menu on link click
+        document.addEventListener('click', (e) => {
+            if (e.target.closest('.nav-links a')) {
+                menuToggle.classList.remove('active');
+                document.querySelectorAll('.nav-links').forEach(nav => nav.classList.remove('active'));
+            }
+        });
+    }
 
     const updateNavbar = () => {
         const navGuest = document.getElementById('nav-guest');
@@ -681,10 +704,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if(typeof lucide !== 'undefined') lucide.createIcons();
         } catch (error) {}
     }
-    document.getElementById('show-add-activity').addEventListener('click', () => { document.getElementById('add-activity-container').style.display = 'block'; document.getElementById('add-material-container').style.display = 'none'; });
-    document.getElementById('cancel-activity').addEventListener('click', () => { document.getElementById('add-activity-container').style.display = 'none'; });
-    document.getElementById('show-add-material').addEventListener('click', () => { document.getElementById('add-material-container').style.display = 'block'; document.getElementById('add-activity-container').style.display = 'none'; });
-    document.getElementById('cancel-material').addEventListener('click', () => { document.getElementById('add-material-container').style.display = 'none'; });
-    addActivityForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { category_id: selectedCategory.id, course_id: selectedCourse.id, title: document.getElementById('act-title').value, content_url: document.getElementById('act-url').value, activity_type: 'google_form', sequence_number: document.getElementById('act-sequence').value || 0, description: document.getElementById('act-desc-simple').value }; const response = await fetch('../api/courses.php?type=activities', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { addActivityForm.reset(); document.getElementById('act-sequence').value = 0; document.getElementById('add-activity-container').style.display = 'none'; loadCurriculumItems(); } });
-    addMaterialForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { course_id: selectedCourse.id, category_id: selectedCategory.id, title: document.getElementById('mat-title').value, description: document.getElementById('mat-desc').value, url: document.getElementById('mat-url').value, material_type: document.getElementById('mat-type').value }; const response = await fetch('../api/courses.php?type=materials', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { addMaterialForm.reset(); document.getElementById('add-material-container').style.display = 'none'; loadCurriculumItems(); } });
+    if(document.getElementById('show-add-activity')) document.getElementById('show-add-activity').addEventListener('click', () => { document.getElementById('add-activity-container').style.display = 'block'; document.getElementById('add-material-container').style.display = 'none'; });
+    if(document.getElementById('cancel-activity')) document.getElementById('cancel-activity').addEventListener('click', () => { document.getElementById('add-activity-container').style.display = 'none'; });
+    if(document.getElementById('show-add-material')) document.getElementById('show-add-material').addEventListener('click', () => { document.getElementById('add-material-container').style.display = 'block'; document.getElementById('add-activity-container').style.display = 'none'; });
+    if(document.getElementById('cancel-material')) document.getElementById('cancel-material').addEventListener('click', () => { document.getElementById('add-material-container').style.display = 'none'; });
+    if(addActivityForm) {
+        addActivityForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { category_id: selectedCategory.id, course_id: selectedCourse.id, title: document.getElementById('act-title').value, content_url: document.getElementById('act-url').value, activity_type: 'google_form', sequence_number: document.getElementById('act-sequence').value || 0, description: document.getElementById('act-desc-simple').value }; const response = await fetch('../api/courses.php?type=activities', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { addActivityForm.reset(); document.getElementById('act-sequence').value = 0; document.getElementById('add-activity-container').style.display = 'none'; loadCurriculumItems(); } });
+    }
+    if(addMaterialForm) {
+        addMaterialForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { course_id: selectedCourse.id, category_id: selectedCategory.id, title: document.getElementById('mat-title').value, description: document.getElementById('mat-desc').value, url: document.getElementById('mat-url').value, material_type: document.getElementById('mat-type').value }; const response = await fetch('../api/courses.php?type=materials', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { addMaterialForm.reset(); document.getElementById('add-material-container').style.display = 'none'; loadCurriculumItems(); } });
+    }
 });

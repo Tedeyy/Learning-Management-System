@@ -24,5 +24,11 @@
             <li><a href="#">Analytics</a></li>
             <li><a href="#" class="logout-btn">Logout</a></li>
         </ul>
+
+        <div class="menu-toggle" id="mobile-menu">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
     </div>
 </nav>
