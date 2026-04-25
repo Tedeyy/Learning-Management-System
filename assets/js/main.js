@@ -661,14 +661,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const moduleNameEl = document.getElementById('learning-module-name');
         if(moduleNameEl) moduleNameEl.textContent = selectedCategory.name;
 
-        // Update Module Progress Bar
-        const t = parseInt(selectedCategory.total_items) || 0;
-        const c = parseInt(selectedCategory.completed_items) || 0;
-        const perc = t > 0 ? Math.round((c/t)*100) : 0;
-        const progressBar = document.getElementById('module-progress-bar');
-        const progressText = document.getElementById('module-progress-text');
-        if(progressBar) progressBar.style.width = `${perc}%`;
-        if(progressText) progressText.textContent = `${perc}%`;
+        // Fetch latest category stats for accurate progress bar
+        try {
+            const statsRes = await fetch(`../api/courses.php?type=categories&course_id=${selectedCourse.id}&student_id=${currentUser.id}`);
+            const categories = await statsRes.json();
+            const currentCat = categories.find(c => c.id == selectedCategory.id);
+            if(currentCat) {
+                const t = parseInt(currentCat.total_items) || 0;
+                const c = parseInt(currentCat.completed_items) || 0;
+                const perc = t > 0 ? Math.round((c/t)*100) : 0;
+                const progressBar = document.getElementById('module-progress-bar');
+                const progressText = document.getElementById('module-progress-text');
+                if(progressBar) progressBar.style.width = `${perc}%`;
+                if(progressText) progressText.textContent = `${perc}%`;
+                // Update the memory object too
+                selectedCategory.completed_items = currentCat.completed_items;
+                selectedCategory.total_items = currentCat.total_items;
+            }
+        } catch (err) { console.error("Failed to update progress bar stats:", err); }
 
         learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading lessons...</p>';
         try {
@@ -751,12 +761,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     result = JSON.parse(text);
                 } catch (jsonErr) {
-                    console.error('Login API returned non-JSON response:', text);
+                    console.error('API Error Response:', text);
                     const msgEl = document.getElementById('login-message');
                     if(msgEl) {
-                        msgEl.textContent = 'Server Error: Invalid response format.';
+                        if (text.includes('__test')) {
+                            msgEl.innerHTML = '<strong>Hosting Security Challenge:</strong> Please <a href="../api/login.php" target="_blank" style="color: blue; text-decoration: underline;">click here</a> to verify your browser, then refresh this page and try again.';
+                        } else {
+                            msgEl.textContent = 'Server Error: The server returned an invalid response.';
+                        }
                         msgEl.style.display = 'block';
-                        msgEl.style.color = 'red';
+                        msgEl.style.color = '#721c24';
+                        msgEl.style.background = '#f8d7da';
+                        msgEl.style.padding = '10px';
+                        msgEl.style.borderRadius = '5px';
+                        msgEl.style.marginTop = '10px';
                     }
                     return;
                 }
