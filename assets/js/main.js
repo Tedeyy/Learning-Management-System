@@ -113,6 +113,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const goToRegister = document.getElementById('go-to-register');
+    if (goToRegister) {
+        goToRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(registerView);
+            if (toggleAuth) toggleAuth.textContent = 'Login';
+        });
+    }
+
+    const goToLogin = document.getElementById('go-to-login');
+    if (goToLogin) {
+        goToLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(loginView);
+            if (toggleAuth) toggleAuth.textContent = 'Sign Up';
+        });
+    }
+
     // --- Comment System Helpers ---
 
     async function loadComments(targetId, targetType, container) {
@@ -237,37 +255,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 
-                // We don't append to container here anymore, we return it
+                container.appendChild(commentEl);
                 
-                // Container for replies
+                // Recursively render replies
                 if (c.replies.length > 0) {
-                    const repliesContainer = document.createElement('div');
-                    repliesContainer.className = 'replies-container';
-                    repliesContainer.style.display = 'none';
-                    
-                    const showRepliesBtn = document.createElement('button');
-                    showRepliesBtn.className = 'show-replies-btn';
-                    showRepliesBtn.style.cssText = 'background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; cursor: pointer; margin-top: 10px; margin-left: 1.5rem; display: flex; align-items: center; gap: 5px;';
-                    showRepliesBtn.innerHTML = `<i data-lucide="chevron-down" style="width: 12px;"></i> Show ${c.replies.length} ${c.replies.length === 1 ? 'reply' : 'replies'}`;
-                    
-                    showRepliesBtn.addEventListener('click', () => {
-                        repliesContainer.style.display = 'block';
-                        showRepliesBtn.style.display = 'none';
-                    });
-                    
-                    commentEl.appendChild(showRepliesBtn);
-                    commentEl.appendChild(repliesContainer);
-                    
-                    // Render replies into the replies container
-                    c.replies.forEach(reply => {
-                        repliesContainer.appendChild(renderComment(reply, depth + 1));
-                    });
+                    c.replies.forEach(reply => renderComment(reply, depth + 1));
                 }
-                
-                return commentEl;
             };
             
-            rootComments.forEach(c => container.appendChild(renderComment(c)));
+            rootComments.forEach(c => renderComment(c));
             if(typeof lucide !== 'undefined') lucide.createIcons();
         } catch (e) {
             container.innerHTML = '<p style="color: red; font-size: 0.7rem;">Error loading comments.</p>';
@@ -333,7 +329,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadInstructorCourses() {
         try {
             const response = await fetch(`../api/courses.php?type=courses&instructor_id=${currentUser.id}`);
-            const courses = await response.json();
+            const text = await response.text();
+            let courses;
+            try {
+                courses = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse courses JSON:', text);
+                return;
+            }
             const list = document.getElementById('instructor-courses-list');
             if(!list || !Array.isArray(courses)) return;
             list.innerHTML = courses.length ? '' : '<p>No courses yet.</p>';
@@ -677,7 +680,101 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
     document.querySelectorAll('.logout-btn').forEach(btn => btn.addEventListener('click', () => { localStorage.removeItem('currentUser'); window.location.reload(); }));
-    if(loginForm) { loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { email: document.getElementById('login-email').value, password: document.getElementById('login-password').value }; const response = await fetch('../api/login.php', { method: 'POST', body: JSON.stringify(data) }); const result = await response.json(); if (response.ok) { localStorage.setItem('currentUser', JSON.stringify(result.user)); window.location.reload(); } }); }
+    if(loginForm) { 
+        loginForm.addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            const data = { 
+                email: document.getElementById('login-email').value, 
+                password: document.getElementById('login-password').value 
+            }; 
+            try {
+                const response = await fetch('../api/login.php', { method: 'POST', body: JSON.stringify(data) }); 
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (jsonErr) {
+                    console.error('Login API returned non-JSON response:', text);
+                    const msgEl = document.getElementById('login-message');
+                    if(msgEl) {
+                        msgEl.textContent = 'Server Error: Invalid response format.';
+                        msgEl.style.display = 'block';
+                        msgEl.style.color = 'red';
+                    }
+                    return;
+                }
+                
+                if (response.ok) { 
+                    localStorage.setItem('currentUser', JSON.stringify(result.user)); 
+                    window.location.reload(); 
+                } else {
+                    const msgEl = document.getElementById('login-message');
+                    if(msgEl) {
+                        msgEl.textContent = result.message || 'Login failed.';
+                        msgEl.style.display = 'block';
+                        msgEl.style.color = 'red';
+                    }
+                }
+            } catch (fetchErr) {
+                console.error('Login fetch error:', fetchErr);
+            }
+        }); 
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.textContent;
+            
+            const data = {
+                first_name: document.getElementById('reg-fname').value,
+                last_name: document.getElementById('reg-lname').value,
+                middle_name: document.getElementById('reg-mname').value,
+                role: document.getElementById('reg-role').value,
+                birthdate: document.getElementById('reg-birthdate').value,
+                gender: document.getElementById('reg-gender').value,
+                address: document.getElementById('reg-address').value,
+                contact_number: document.getElementById('reg-contact').value,
+                email: document.getElementById('reg-email').value,
+                password: document.getElementById('reg-password').value
+            };
+
+            const msgEl = document.getElementById('register-message');
+            if (msgEl) msgEl.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+
+            try {
+                const response = await fetch('../api/register.php', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (msgEl) {
+                    msgEl.textContent = result.message;
+                    msgEl.style.display = 'block';
+                    msgEl.style.color = response.ok ? '#2ecc71' : '#ff4d4d';
+                }
+
+                if (response.ok) {
+                    registerForm.reset();
+                    setTimeout(() => switchView(loginView), 2000);
+                }
+            } catch (err) {
+                console.error('Registration error:', err);
+                if (msgEl) {
+                    msgEl.textContent = 'System Error. Please try again later.';
+                    msgEl.style.display = 'block';
+                    msgEl.style.color = '#ff4d4d';
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+            }
+        });
+    }
     if(addCourseForm) { addCourseForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { instructor_id: currentUser.id, title: document.getElementById('course-title').value, description: document.getElementById('course-desc').value }; const response = await fetch('../api/courses.php?type=courses', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { loadInstructorCourses(); addCourseForm.reset(); } }); }
     if(searchInput) { searchInput.addEventListener('input', (e) => { loadStudentCourses(e.target.value); }); }
 
@@ -757,5 +854,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if(addMaterialForm) {
         addMaterialForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { course_id: selectedCourse.id, category_id: selectedCategory.id, title: document.getElementById('mat-title').value, description: document.getElementById('mat-desc').value, url: document.getElementById('mat-url').value, material_type: document.getElementById('mat-type').value }; const response = await fetch('../api/courses.php?type=materials', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { addMaterialForm.reset(); document.getElementById('add-material-container').style.display = 'none'; loadCurriculumItems(); } });
+    }
+
+    if(addCategoryForm) {
+        addCategoryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                course_id: selectedCourse.id,
+                name: document.getElementById('cat-name').value
+            };
+            const response = await fetch('../api/courses.php?type=categories', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                addCategoryForm.reset();
+                loadCategories();
+            }
+        });
     }
 });
