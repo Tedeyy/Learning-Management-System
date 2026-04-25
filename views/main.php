@@ -359,46 +359,46 @@ include 'content/navbar.php';
         </div>
     </div>
 
-    <!-- Student Learning View (Dedicated Curriculum View) -->
-    <div id="learning-view" class="dashboard-view view" style="width: 100%; max-width: 1200px; padding: 2rem;">
-        <header style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <a href="#" id="back-to-catalog"
-                    style="display: flex; align-items: center; gap: 8px; color: var(--secondary-color); font-weight: 600; text-decoration: none; margin-bottom: 0.5rem;">
-                    <i data-lucide="chevron-left"></i> Back to Course Catalog
-                </a>
-                <h1 id="learning-course-title" style="color: var(--primary-color);">Course Title</h1>
+    <!-- Step 2: Course Modules View -->
+    <div id="learning-modules-view" class="dashboard-view view" style="width: 100%; max-width: 900px; padding: 2rem;">
+        <header style="margin-bottom: 2rem;">
+            <a href="#" id="back-to-catalog" class="back-link" style="display: flex; align-items: center; gap: 8px; color: var(--secondary-color); font-weight: 600; text-decoration: none; margin-bottom: 0.5rem;">
+                <i data-lucide="chevron-left"></i> Back to Courses
+            </a>
+            <h1 id="learning-course-title" style="color: var(--primary-color); margin: 0;">Course Modules</h1>
+            <p style="color: #666; margin-top: 0.5rem;">Select a module to view its contents and track your progress.</p>
+        </header>
+
+        <div id="learning-categories-list" style="display: flex; flex-direction: column; gap: 1rem;">
+            <!-- Categories (Modules) load here -->
+        </div>
+    </div>
+
+    <!-- Step 3: Module Content View -->
+    <div id="learning-content-view" class="dashboard-view view" style="width: 100%; max-width: 900px; padding: 2rem;">
+        <header style="margin-bottom: 2.5rem; border-bottom: 1px solid #eee; padding-bottom: 1.5rem;">
+            <a href="#" id="back-to-modules" class="back-link" style="display: flex; align-items: center; gap: 8px; color: var(--secondary-color); font-weight: 600; text-decoration: none; margin-bottom: 1rem;">
+                <i data-lucide="chevron-left"></i> Back to Modules
+            </a>
+            <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+                <div>
+                    <h1 id="learning-module-name" style="color: var(--primary-color); margin: 0; font-size: 2rem;">Module Name</h1>
+                    <p style="color: #666; margin-top: 0.5rem;">Activities and Learning Materials</p>
+                </div>
+                <div id="module-progress-wrapper" style="width: 180px; text-align: right;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span style="font-size: 0.7rem; font-weight: 700; color: #999; text-transform: uppercase;">Module Progress</span>
+                        <span id="module-progress-text" style="font-size: 0.9rem; font-weight: 800; color: var(--secondary-color);">0%</span>
+                    </div>
+                    <div style="height: 10px; width: 100%; background: #f0f0f0; border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
+                        <div id="module-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <div style="display: grid; grid-template-columns: 300px 1fr; gap: 2rem; align-items: flex-start;">
-            <!-- Learning Sidebar: Modules -->
-            <aside
-                style="background: white; border-radius: 20px; padding: 1.5rem; border: 1px solid #eee; height: fit-content; position: sticky; top: 2rem;">
-                <h3
-                    style="margin-bottom: 1.5rem; color: var(--secondary-color); font-size: 1.1rem; display: flex; align-items: center; gap: 10px;">
-                    <i data-lucide="layers" style="width: 20px;"></i> Modules
-                </h3>
-                <div id="learning-categories-list" style="display: flex; flex-direction: column; gap: 8px;">
-                    <!-- Modules load here -->
-                </div>
-            </aside>
-
-            <!-- Learning Content: Activities -->
-            <main>
-                <div id="learning-no-selection"
-                    style="background: white; border-radius: 20px; border: 1px solid #eee; padding: 4rem; text-align: center;">
-                    <i data-lucide="play-circle"
-                        style="width: 64px; height: 64px; color: #eee; margin-bottom: 1.5rem;"></i>
-                    <h4 style="color: #999;">Select a module to continue your journey</h4>
-                </div>
-                <div id="learning-activity-content" style="display: none;">
-                    <h2 id="learning-module-name" style="margin-bottom: 2rem; color: #333;">Module Name</h2>
-                    <div id="learning-curriculum-items" style="display: flex; flex-direction: column; gap: 1.5rem;">
-                        <!-- Content loads here -->
-                    </div>
-                </div>
-            </main>
+        <div id="learning-curriculum-items" style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Content loads here -->
         </div>
     </div>
 </main>

@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerView = document.getElementById('register-view');
     const instructorDashboard = document.getElementById('instructor-dashboard');
     const studentDashboard = document.getElementById('student-dashboard');
-    const learningView = document.getElementById('learning-view'); 
+    const learningModulesView = document.getElementById('learning-modules-view');
+    const learningContentView = document.getElementById('learning-content-view');
     const authContainer = document.querySelector('.auth-container');
     const navbar = document.getElementById('navbar');
 
@@ -22,10 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Learning View Elements
     const learningCategoriesList = document.getElementById('learning-categories-list');
-    const learningActivityContent = document.getElementById('learning-activity-content');
-    const learningNoSelection = document.getElementById('learning-no-selection');
     const learningCurriculumItems = document.getElementById('learning-curriculum-items');
     const backToCatalogBtn = document.getElementById('back-to-catalog');
+    const backToModulesBtn = document.getElementById('back-to-modules');
 
     // Instructor Modal Elements
     const instructorModalOverlay = document.getElementById('instructor-modal-overlay');
@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const switchView = (viewToShow) => {
+        console.log('Switching to view:', viewToShow.id);
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         setTimeout(() => {
             viewToShow.classList.add('active');
@@ -569,11 +570,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openLearningView(course) {
+        console.log('Opening modules list for course:', course.title);
         selectedCourse = course; selectedCourse.id = course.course_id || course.id; 
-        document.getElementById('learning-course-title').textContent = course.title;
-        learningNoSelection.style.display = 'block'; learningActivityContent.style.display = 'none';
+        const titleEl = document.getElementById('learning-course-title');
+        if(titleEl) titleEl.textContent = course.title;
+        
         learningCategoriesList.innerHTML = '<p style="padding: 1rem; color: #999;">Loading modules...</p>';
-        switchView(learningView); loadLearningCategories();
+        switchView(learningModulesView); 
+        loadLearningCategories();
+    }
+
+    if(backToModulesBtn) {
+        backToModulesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Returning to modules list');
+            switchView(learningModulesView);
+        });
     }
 
     async function loadLearningCategories() {
@@ -586,11 +598,44 @@ document.addEventListener('DOMContentLoaded', () => {
             categories.forEach(cat => {
                 const t = parseInt(cat.total_items) || 0; const c = parseInt(cat.completed_items) || 0;
                 const perc = t > 0 ? Math.round((c/t)*100) : 0; totalItems += t; totalCompleted += c;
-                const el = document.createElement('div'); el.className = 'category-item'; el.style.padding = '15px'; el.style.borderRadius = '15px'; el.style.cursor = 'pointer'; el.style.transition = 'all 0.2s'; el.style.marginBottom = '10px'; el.style.background = selectedCategory?.id == cat.id ? '#e8f0fe' : '#f9f9fb'; el.style.border = selectedCategory?.id == cat.id ? '1px solid var(--primary-color)' : '1px solid #eee';
-                const progressBarHTML = t > 0 ? `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><span style="font-weight: 600; font-size: 0.95rem; color: ${selectedCategory?.id == cat.id ? 'var(--primary-color)' : '#333'}">${cat.name}</span><span style="font-size: 0.75rem; font-weight: 700; color: #666;">${perc}%</span></div><div style="height: 6px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden;"><div style="height: 100%; width: ${perc}%; background: ${perc === 100 ? '#2ecc71' : 'var(--primary-color)'}; transition: width 0.5s ease;"></div></div>` : `<span style="font-weight: 600; font-size: 0.95rem; color: ${selectedCategory?.id == cat.id ? 'var(--primary-color)' : '#333'}">${cat.name}</span>`;
-                el.innerHTML = progressBarHTML; el.addEventListener('click', () => { selectedCategory = cat; loadLearningCategories(); loadLearningCurriculum(); });
+                const el = document.createElement('div'); 
+                el.className = 'category-item'; 
+                el.style.padding = '2rem'; 
+                el.style.borderRadius = '20px'; 
+                el.style.cursor = 'pointer'; 
+                el.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; 
+                el.style.marginBottom = '1.5rem'; 
+                el.style.background = 'white';
+                el.style.border = '1px solid #eee';
+                el.style.boxShadow = '0 10px 30px rgba(0,0,0,0.02)';
+                
+                const progressBarHTML = t > 0 ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; color: #333; font-size: 1.2rem;">${cat.name}</h3>
+                        <span style="font-size: 0.9rem; font-weight: 800; color: var(--secondary-color); background: #f0f7ff; padding: 5px 12px; border-radius: 50px;">${perc}%</span>
+                    </div>
+                    <div style="height: 10px; width: 100%; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
+                        <div style="height: 100%; width: ${perc}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); transition: width 0.6s ease;"></div>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.8rem; color: #999; display: flex; align-items: center; gap: 5px;">
+                        <i data-lucide="info" style="width: 14px;"></i> Click to open module content
+                    </div>
+                ` : `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: #333; font-size: 1.2rem;">${cat.name}</h3>
+                        <i data-lucide="chevron-right" style="color: #ccc;"></i>
+                    </div>
+                `;
+                el.innerHTML = progressBarHTML; 
+                el.addEventListener('click', () => { 
+                    console.log('Opening module content:', cat.name);
+                    selectedCategory = cat; 
+                    switchView(learningContentView);
+                    loadLearningCurriculum(); 
+                });
                 learningCategoriesList.appendChild(el);
             });
+            if(typeof lucide !== 'undefined') lucide.createIcons();
             if (totalItems > 0) {
                 const totalPerc = Math.round((totalCompleted/totalItems)*100); const totalContainer = document.createElement('div'); totalContainer.style.marginTop = '2rem'; totalContainer.style.paddingTop = '1.5rem'; totalContainer.style.borderTop = '1px solid #eee';
                 totalContainer.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><span style="font-weight: 700; font-size: 0.85rem; color: #666; text-transform: uppercase;">Total Progress</span><span style="font-weight: 800; font-size: 1.1rem; color: var(--secondary-color);">${totalPerc}%</span></div><div style="height: 10px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);"><div style="height: 100%; width: ${totalPerc}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div></div>`;
@@ -613,9 +658,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadLearningCurriculum() {
-        learningNoSelection.style.display = 'none'; learningActivityContent.style.display = 'block';
         const moduleNameEl = document.getElementById('learning-module-name');
         if(moduleNameEl) moduleNameEl.textContent = selectedCategory.name;
+
+        // Update Module Progress Bar
+        const t = parseInt(selectedCategory.total_items) || 0;
+        const c = parseInt(selectedCategory.completed_items) || 0;
+        const perc = t > 0 ? Math.round((c/t)*100) : 0;
+        const progressBar = document.getElementById('module-progress-bar');
+        const progressText = document.getElementById('module-progress-text');
+        if(progressBar) progressBar.style.width = `${perc}%`;
+        if(progressText) progressText.textContent = `${perc}%`;
+
         learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading lessons...</p>';
         try {
             const actRes = await fetch(`../api/courses.php?type=activities&category_id=${selectedCategory.id}&student_id=${currentUser.id}`);
@@ -644,7 +698,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 learningCurriculumItems.appendChild(card);
             });
             if(typeof lucide !== 'undefined') lucide.createIcons();
-        } catch (e) {}
+        } catch (e) {
+            console.error('Error loading curriculum:', e);
+            learningCurriculumItems.innerHTML = '<p style="padding: 2rem; color: red; text-align: center;">An error occurred while loading content. Please try again.</p>';
+        }
     }
 
     if(backToCatalogBtn) { backToCatalogBtn.addEventListener('click', (e) => { e.preventDefault(); selectedCategory = null; switchView(studentDashboard); }); }
@@ -780,7 +837,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getPreviewHTML(url, type) {
         if (!url) return '';
-        if (url.includes('docs.google.com/forms')) { const embedUrl = url.includes('/viewform') ? url.replace('/viewform', '/viewform?embedded=true') : url; return `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" marginheight="0" marginwidth="0" style="border-radius: 10px; background: white;">Loading…</iframe>`; }
+        if (url.includes('docs.google.com/forms')) { 
+            return `<div style="padding: 2rem; background: #fdf2f2; border-radius: 15px; text-align: center; border: 1px solid #fee2e2;">
+                <div style="margin-bottom: 1rem;">
+                    <i data-lucide="file-text" style="width: 48px; height: 48px; color: #b91c1c;"></i>
+                </div>
+                <h4 style="margin-bottom: 0.5rem; color: #b91c1c;">Google Form Activity</h4>
+                <p style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 1.5rem;">This activity requires you to complete a Google Form.</p>
+                <a href="${url}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; background: #7c3aed; border-color: #7c3aed;">
+                    Open Google Form <i data-lucide="external-link" style="width: 16px;"></i>
+                </a>
+            </div>`; 
+        }
         if (url.includes('youtube.com') || url.includes('youtu.be')) { const vidId = url.split('v=')[1] || url.split('/').pop(); return `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${vidId}" frameborder="0" allowfullscreen style="border-radius: 10px;"></iframe>`; }
         if (type === 'pdf' || url.endsWith('.pdf')) { return `<iframe src="${url}" width="100%" height="500px" style="border: none; border-radius: 10px;"></iframe>`; }
         return `<div style="padding: 1rem; background: #eee; border-radius: 10px; text-align: center;"><a href="${url}" target="_blank" style="color: var(--secondary-color); font-weight: 600;">Open Resource <i data-lucide="external-link" style="width: 14px;"></i></a></div>`;

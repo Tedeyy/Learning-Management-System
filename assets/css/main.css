@@ -299,13 +299,76 @@
     }
 }
 
-@media (max-width: 480px) {
-    .auth-card {
-        padding: 1.5rem !important;
+/* Unified Learning View (Single Page System) */
+.module-overlay-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-light);
+    z-index: 9999;
+    overflow-y: auto;
+    display: none; /* Controlled by content-visible class */
+    padding: 2rem;
+    animation: fadeIn 0.3s ease-out;
+}
+
+#learning-view .content-visible .module-overlay-container {
+    display: block !important;
+}
+
+#learning-view .dashboard-layout {
+    display: block !important;
+    width: 100% !important;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#learning-view aside {
+    width: 100% !important;
+    position: static !important;
+}
+
+.mobile-only {
+    display: block !important; /* Now show back button on desktop too */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .module-overlay-container {
+        padding: 1.2rem;
+    }
+}
+
+@media (min-width: 769px) {
+    .mobile-only {
+        display: none !important;
     }
     
-    .btn {
-        padding: 0.8rem 1.2rem;
-        font-size: 0.9rem;
+    #learning-view .dashboard-layout {
+        display: grid !important;
+        grid-template-columns: 300px 1fr !important;
+        gap: 2rem !important;
     }
+
+    #learning-view aside, 
+    #learning-view main {
+        display: block !important;
+    }
+}
+
+.dashboard-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.mobile-only {
+    display: none;
 }
