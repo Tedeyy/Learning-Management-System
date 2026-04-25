@@ -237,15 +237,37 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 
-                container.appendChild(commentEl);
+                // We don't append to container here anymore, we return it
                 
-                // Recursively render replies
+                // Container for replies
                 if (c.replies.length > 0) {
-                    c.replies.forEach(reply => renderComment(reply, depth + 1));
+                    const repliesContainer = document.createElement('div');
+                    repliesContainer.className = 'replies-container';
+                    repliesContainer.style.display = 'none';
+                    
+                    const showRepliesBtn = document.createElement('button');
+                    showRepliesBtn.className = 'show-replies-btn';
+                    showRepliesBtn.style.cssText = 'background: #f8fafc; border: 1px solid #e2e8f0; color: #64748b; font-size: 0.7rem; font-weight: 600; padding: 4px 10px; border-radius: 20px; cursor: pointer; margin-top: 10px; margin-left: 1.5rem; display: flex; align-items: center; gap: 5px;';
+                    showRepliesBtn.innerHTML = `<i data-lucide="chevron-down" style="width: 12px;"></i> Show ${c.replies.length} ${c.replies.length === 1 ? 'reply' : 'replies'}`;
+                    
+                    showRepliesBtn.addEventListener('click', () => {
+                        repliesContainer.style.display = 'block';
+                        showRepliesBtn.style.display = 'none';
+                    });
+                    
+                    commentEl.appendChild(showRepliesBtn);
+                    commentEl.appendChild(repliesContainer);
+                    
+                    // Render replies into the replies container
+                    c.replies.forEach(reply => {
+                        repliesContainer.appendChild(renderComment(reply, depth + 1));
+                    });
                 }
+                
+                return commentEl;
             };
             
-            rootComments.forEach(c => renderComment(c));
+            rootComments.forEach(c => container.appendChild(renderComment(c)));
             if(typeof lucide !== 'undefined') lucide.createIcons();
         } catch (e) {
             container.innerHTML = '<p style="color: red; font-size: 0.7rem;">Error loading comments.</p>';
