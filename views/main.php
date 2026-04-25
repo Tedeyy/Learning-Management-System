@@ -312,8 +312,8 @@ include 'content/navbar.php';
 
     <!-- Modals for Instructor (User Info & Progress) -->
     <div id="instructor-modal-overlay" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
-        <div class="auth-card" style="max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; position: relative; padding: 2.5rem;">
-            <button id="close-instructor-modal" style="position: absolute; top: 1.5rem; right: 1.5rem; border: none; background: none; cursor: pointer; color: #999;"><i data-lucide="x"></i></button>
+        <div class="auth-card" style="max-width: 500px; width: 95%; max-height: 85vh; overflow-y: auto; position: relative; padding: 1.5rem 2rem;">
+            <button id="close-instructor-modal" style="position: absolute; top: 1rem; right: 1rem; border: none; background: none; cursor: pointer; color: #999;"><i data-lucide="x"></i></button>
             <div id="instructor-modal-content">
                 <!-- Content will be loaded dynamically -->
             </div>

@@ -40,12 +40,20 @@ document.addEventListener('DOMContentLoaded', () => {
             navLinks.classList.toggle('active');
         });
 
-        // Close menu when a link is clicked
-        navLinks.querySelectorAll('a').forEach(link => {
-            link.addEventListener('click', () => {
+        // Close menu on link click or click outside
+        document.addEventListener('click', (e) => {
+            const isClickInsideMenu = e.target.closest('.nav-links');
+            const isClickOnToggle = e.target.closest('.menu-toggle');
+            
+            if (isClickInsideMenu && e.target.closest('a')) {
+                // Clicked a link inside
                 menuToggle.classList.remove('active');
                 navLinks.classList.remove('active');
-            });
+            } else if (!isClickInsideMenu && !isClickOnToggle) {
+                // Clicked outside
+                menuToggle.classList.remove('active');
+                navLinks.classList.remove('active');
+            }
         });
     }
 });

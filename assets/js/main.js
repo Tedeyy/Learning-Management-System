@@ -51,9 +51,17 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // Close menu on link click
+        // Close menu on link click or click outside
         document.addEventListener('click', (e) => {
-            if (e.target.closest('.nav-links a')) {
+            const isClickInsideMenu = e.target.closest('.nav-links');
+            const isClickOnToggle = e.target.closest('.menu-toggle');
+            
+            if (isClickInsideMenu && e.target.closest('a')) {
+                // Clicked a link inside
+                menuToggle.classList.remove('active');
+                document.querySelectorAll('.nav-links').forEach(nav => nav.classList.remove('active'));
+            } else if (!isClickInsideMenu && !isClickOnToggle) {
+                // Clicked outside
                 menuToggle.classList.remove('active');
                 document.querySelectorAll('.nav-links').forEach(nav => nav.classList.remove('active'));
             }
@@ -90,6 +98,20 @@ document.addEventListener('DOMContentLoaded', () => {
             updateNavbar();
         }, 100);
     };
+
+    const toggleAuth = document.getElementById('toggle-auth');
+    if (toggleAuth) {
+        toggleAuth.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (loginView && loginView.classList.contains('active')) {
+                switchView(registerView);
+                toggleAuth.textContent = 'Login';
+            } else {
+                switchView(loginView);
+                toggleAuth.textContent = 'Sign Up';
+            }
+        });
+    }
 
     // --- Comment System Helpers ---
 
@@ -379,15 +401,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const date = new Date(s.enrolled_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
                 
                 tr.innerHTML = `
-                    <td style="padding: 1rem; font-weight: 600; color: #333;">${s.first_name} ${s.last_name}</td>
-                    <td style="padding: 1rem; color: #666;">${s.email}</td>
-                    <td style="padding: 1rem; color: #999; font-size: 0.85rem;">${date}</td>
-                    <td style="padding: 1rem; text-align: center; position: relative;">
-                        <button class="enrollee-options-btn" style="border: none; background: none; cursor: pointer; color: #999;"><i data-lucide="more-vertical" style="width: 18px;"></i></button>
-                        <div class="enrollee-dropdown" style="display: none; position: absolute; right: 2rem; top: 2.5rem; background: white; border: 1px solid #eee; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; min-width: 160px; overflow: hidden;">
-                            <button class="view-user-info-btn" data-id="${s.id}" style="width: 100%; text-align: left; padding: 12px 15px; border: none; background: white; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;"><i data-lucide="user" style="width: 14px;"></i> User Information</button>
-                            <button class="view-user-progress-btn" data-id="${s.id}" data-name="${s.first_name}" style="width: 100%; text-align: left; padding: 12px 15px; border: none; background: white; cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; gap: 8px;"><i data-lucide="bar-chart-2" style="width: 14px;"></i> View Progress</button>
-                            <button class="unenroll-user-btn" data-id="${s.id}" data-name="${s.first_name} ${s.last_name}" style="width: 100%; text-align: left; padding: 12px 15px; border: none; background: white; cursor: pointer; font-size: 0.85rem; color: #ff4d4d; border-top: 1px solid #f9f9f9; display: flex; align-items: center; gap: 8px;"><i data-lucide="user-minus" style="width: 14px;"></i> Unenroll</button>
+                    <td data-label="Student Name" style="padding: 0.75rem; font-weight: 600; color: #333; font-size: 0.85rem;">${s.first_name} ${s.last_name}</td>
+                    <td data-label="Email" style="padding: 0.75rem; color: #666; font-size: 0.85rem;">${s.email}</td>
+                    <td data-label="Joined At" style="padding: 0.75rem; color: #999; font-size: 0.75rem;">${date}</td>
+                    <td data-label="Actions" style="padding: 0.5rem; text-align: center; position: relative;">
+                        <button class="enrollee-options-btn" style="border: none; background: none; cursor: pointer; color: #999;"><i data-lucide="more-vertical" style="width: 16px;"></i></button>
+                        <div class="enrollee-dropdown" style="display: none; position: absolute; right: 2rem; top: 2.5rem; background: white; border: 1px solid #eee; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 100; min-width: 150px; overflow: hidden;">
+                            <button class="view-user-info-btn" data-id="${s.id}" style="width: 100%; text-align: left; padding: 10px 12px; border: none; background: white; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;"><i data-lucide="user" style="width: 12px;"></i> User Information</button>
+                            <button class="view-user-progress-btn" data-id="${s.id}" data-name="${s.first_name}" style="width: 100%; text-align: left; padding: 10px 12px; border: none; background: white; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 8px;"><i data-lucide="bar-chart-2" style="width: 12px;"></i> View Progress</button>
+                            <button class="unenroll-user-btn" data-id="${s.id}" data-name="${s.first_name} ${s.last_name}" style="width: 100%; text-align: left; padding: 10px 12px; border: none; background: white; cursor: pointer; font-size: 0.8rem; color: #ff4d4d; border-top: 1px solid #f9f9f9; display: flex; align-items: center; gap: 8px;"><i data-lucide="user-minus" style="width: 12px;"></i> Unenroll</button>
                         </div>
                     </td>
                 `;
@@ -422,20 +444,20 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch(`../api/courses.php?type=user_info&id=${userId}`);
             const u = await res.json();
             instructorModalContent.innerHTML = `
-                <div style="text-align: center; margin-bottom: 2rem;">
-                    <div style="width: 80px; height: 80px; background: #f0f4ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; color: var(--primary-color);">
-                        <i data-lucide="user" style="width: 40px; height: 40px;"></i>
+                <div style="text-align: center; margin-bottom: 1.5rem;">
+                    <div style="width: 60px; height: 60px; background: #f0f4ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.8rem; color: var(--primary-color);">
+                        <i data-lucide="user" style="width: 30px; height: 30px;"></i>
                     </div>
-                    <h2 style="margin-bottom: 0.2rem;">${u.first_name} ${u.last_name}</h2>
-                    <p style="color: #666;">Student Profile</p>
+                    <h3 style="margin-bottom: 0.1rem;">${u.first_name} ${u.last_name}</h3>
+                    <p style="color: #666; font-size: 0.85rem;">Student Profile</p>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; text-align: left;">
-                    <div><label style="font-size: 0.75rem; color: #999; text-transform: uppercase; font-weight: 700;">Email</label><p style="font-weight: 500;">${u.email}</p></div>
-                    <div><label style="font-size: 0.75rem; color: #999; text-transform: uppercase; font-weight: 700;">Contact</label><p style="font-weight: 500;">${u.contact_number || 'N/A'}</p></div>
-                    <div><label style="font-size: 0.75rem; color: #999; text-transform: uppercase; font-weight: 700;">Gender</label><p style="font-weight: 500;">${u.gender || 'N/A'}</p></div>
-                    <div><label style="font-size: 0.75rem; color: #999; text-transform: uppercase; font-weight: 700;">Birthdate</label><p style="font-weight: 500;">${u.birthdate || 'N/A'}</p></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: left;">
+                    <div><label style="font-size: 0.65rem; color: #999; text-transform: uppercase; font-weight: 700;">Email</label><p style="font-weight: 500; font-size: 0.85rem;">${u.email}</p></div>
+                    <div><label style="font-size: 0.65rem; color: #999; text-transform: uppercase; font-weight: 700;">Contact</label><p style="font-weight: 500; font-size: 0.85rem;">${u.contact_number || 'N/A'}</p></div>
+                    <div><label style="font-size: 0.65rem; color: #999; text-transform: uppercase; font-weight: 700;">Gender</label><p style="font-weight: 500; font-size: 0.85rem;">${u.gender || 'N/A'}</p></div>
+                    <div><label style="font-size: 0.65rem; color: #999; text-transform: uppercase; font-weight: 700;">Birthdate</label><p style="font-weight: 500; font-size: 0.85rem;">${u.birthdate || 'N/A'}</p></div>
                 </div>
-                <div style="margin-top: 1.5rem;"><label style="font-size: 0.75rem; color: #999; text-transform: uppercase; font-weight: 700;">Address</label><p style="font-weight: 500;">${u.address || 'No address provided.'}</p></div>
+                <div style="margin-top: 1rem;"><label style="font-size: 0.65rem; color: #999; text-transform: uppercase; font-weight: 700;">Address</label><p style="font-weight: 500; font-size: 0.85rem;">${u.address || 'No address provided.'}</p></div>
             `;
             if(typeof lucide !== 'undefined') lucide.createIcons();
         } catch (e) {}

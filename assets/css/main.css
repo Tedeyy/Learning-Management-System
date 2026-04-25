@@ -154,14 +154,75 @@
 
     /* Table Responsiveness */
     #enrollees-list-container {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin: 0 -1rem;
-        padding: 0 1rem;
+        margin: 0 -0.5rem;
     }
 
-    table {
-        min-width: 600px;
+    #enrollees-list-container table, 
+    #enrollees-list-container thead, 
+    #enrollees-list-container tbody, 
+    #enrollees-list-container th, 
+    #enrollees-list-container td, 
+    #enrollees-list-container tr {
+        display: block;
+    }
+
+    #enrollees-list-container thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+    }
+
+    #enrollees-list-container tr {
+        background: white;
+        border: 1px solid #eee;
+        border-radius: 15px;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+
+    #enrollees-list-container td {
+        border: none;
+        position: relative;
+        padding-left: 50% !important;
+        text-align: right !important;
+        min-height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+    }
+
+    #enrollees-list-container td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 1rem;
+        width: 45%;
+        padding-right: 10px;
+        white-space: nowrap;
+        text-align: left;
+        font-weight: 700;
+        color: var(--primary-color);
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    #enrollees-list-container td[data-label="Actions"] {
+        justify-content: center;
+        padding-left: 1rem !important;
+        text-align: center !important;
+        border-top: 1px solid #f0f0f0;
+        margin-top: 0.5rem;
+        padding-top: 1rem !important;
+    }
+
+    #enrollees-list-container td[data-label="Actions"]:before {
+        display: none;
+    }
+
+    .enrollee-dropdown {
+        right: 50% !important;
+        transform: translateX(50%);
+        top: 3.5rem !important;
     }
 }
 
