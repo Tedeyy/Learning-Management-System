@@ -27,11 +27,15 @@ try {
             $student_id = $_GET['student_id'] ?? null;
             
             $query = "SELECT c.id, c.title, c.description, c.created_at, CONCAT(u.first_name, ' ', u.last_name) as instructor_name";
-            if ($student_id) { $query .= ", (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND student_id = :sid) as is_enrolled"; }
-            $query .= " FROM courses c JOIN users u ON c.instructor_id = u.id";
-            
-            $where = [];
             $params = [];
+            
+            if ($student_id) { 
+                $query .= ", (SELECT COUNT(*) FROM enrollments WHERE course_id = c.id AND student_id = :sid_col) as is_enrolled"; 
+                $params[':sid_col'] = $student_id;
+            }
+            
+            $query .= " FROM courses c JOIN users u ON c.instructor_id = u.id";
+            $where = [];
             
             if ($instructor_id) { 
                 $where[] = "c.instructor_id = :instructor_id"; 
@@ -44,8 +48,8 @@ try {
             }
             
             if ($student_id && !$instructor_id) {
-                $where[] = "c.id NOT IN (SELECT course_id FROM enrollments WHERE student_id = :sid)";
-                $params[':sid'] = $student_id;
+                $where[] = "c.id NOT IN (SELECT course_id FROM enrollments WHERE student_id = :sid_where)";
+                $params[':sid_where'] = $student_id;
             }
             
             if (count($where) > 0) {
@@ -65,16 +69,18 @@ try {
                         (SELECT COUNT(*) FROM activities WHERE category_id = ac.id) + 
                         (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_items";
             
+            $params = [':course_id' => $course_id];
             if ($student_id) {
-                $query .= ", (SELECT COUNT(*) FROM submissions s JOIN activities a ON s.activity_id = a.id WHERE a.category_id = ac.id AND s.student_id = :student_id) +
-                            (SELECT COUNT(*) FROM material_views mv JOIN learning_materials lm ON mv.material_id = lm.id WHERE lm.category_id = ac.id AND mv.student_id = :student_id) as completed_items";
+                $query .= ", (SELECT COUNT(*) FROM submissions s JOIN activities a ON s.activity_id = a.id WHERE a.category_id = ac.id AND s.student_id = :sid1) +
+                            (SELECT COUNT(*) FROM material_views mv JOIN learning_materials lm ON mv.material_id = lm.id WHERE lm.category_id = ac.id AND mv.student_id = :sid2) as completed_items";
+                $params[':sid1'] = $student_id;
+                $params[':sid2'] = $student_id;
             }
             
             $query .= " FROM activity_categories ac WHERE course_id = :course_id ORDER BY created_at ASC";
             
             $stmt = $db->prepare($query);
-            $stmt->bindParam(":course_id", $course_id);
-            if ($student_id) { $stmt->bindParam(":student_id", $student_id); }
+            foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
             $stmt->execute();
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         } elseif ($type === 'activities') {
@@ -142,14 +148,15 @@ try {
             $query = "SELECT ac.id, ac.name,
                         (SELECT COUNT(*) FROM activities WHERE category_id = ac.id) as total_acts,
                         (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_mats,
-                        (SELECT COUNT(*) FROM submissions s JOIN activities a ON s.activity_id = a.id WHERE a.category_id = ac.id AND s.student_id = :sid) as done_acts,
-                        (SELECT COUNT(*) FROM material_views mv JOIN learning_materials lm ON mv.material_id = lm.id WHERE lm.category_id = ac.id AND mv.student_id = :sid) as viewed_mats
+                        (SELECT COUNT(*) FROM submissions s JOIN activities a ON s.activity_id = a.id WHERE a.category_id = ac.id AND s.student_id = :sid1) as done_acts,
+                        (SELECT COUNT(*) FROM material_views mv JOIN learning_materials lm ON mv.material_id = lm.id WHERE lm.category_id = ac.id AND mv.student_id = :sid2) as viewed_mats
                       FROM activity_categories ac 
                       WHERE ac.course_id = :cid 
                       ORDER BY ac.created_at ASC";
             $stmt = $db->prepare($query);
-            $stmt->bindParam(":sid", $student_id);
-            $stmt->bindParam(":cid", $course_id);
+            $stmt->bindValue(":sid1", $student_id);
+            $stmt->bindValue(":sid2", $student_id);
+            $stmt->bindValue(":cid", $course_id);
             $stmt->execute();
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         } elseif ($type === 'comments') {

@@ -14,6 +14,7 @@ function loadEnv($path) {
     }
 }
 
+// Load .env if it exists
 loadEnv(__DIR__ . '/../.env');
 
 class Database {
@@ -24,7 +25,8 @@ class Database {
     public $conn;
 
     public function __construct() {
-        // Match the successful test parameters
+        // Environment variables from .env or fallback for local development
+        // On InfinityFree, you can update these directly if you don't want to use .env
         $this->host = $_ENV['DB_HOST'] ?? '127.0.0.1';
         $this->db_name = $_ENV['DB_NAME'] ?? 'eduready_db';
         $this->username = $_ENV['DB_USER'] ?? 'root';

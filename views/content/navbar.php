@@ -1,13 +1,13 @@
 <nav id="navbar" class="scrolled">
     <div class="container">
-        <a href="../Index.html" class="logo">
+        <a href="../index.html" class="logo">
             <img src="../assets/img/logo.jpg" alt="EduReady Logo">
             EduReady
         </a>
         
         <!-- Guest Links (Login/Register) -->
         <ul class="nav-links" id="nav-guest">
-            <li><a href="../Index.html">Home</a></li>
+            <li><a href="../index.html">Home</a></li>
             <li><a href="#" id="toggle-auth">Sign Up</a></li>
         </ul>
 

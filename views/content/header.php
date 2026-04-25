@@ -16,7 +16,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <!-- Core CSS -->
-    <link rel="stylesheet" href="../assets/css/Index.css">
+    <link rel="stylesheet" href="../assets/css/index.css">
     <!-- SPA Specific CSS -->
     <link rel="stylesheet" href="../assets/css/main.css">
 </head>
