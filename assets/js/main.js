@@ -389,6 +389,43 @@ document.addEventListener('DOMContentLoaded', () => {
         loadCategories();
     }
 
+    // --- Course Deletion Logic ---
+    const deleteCourseBtn = document.getElementById('delete-course-btn');
+    if (deleteCourseBtn) {
+        deleteCourseBtn.addEventListener('click', async () => {
+            if (!selectedCourse) return;
+
+            const confirmName = prompt(`Are you sure you want to delete "${selectedCourse.title}"?\n\nThis action is PERMANENT and cannot be undone. All modules, activities, and student records will be destroyed.\n\nTo confirm, type the course title exactly as shown above:`);
+            
+            if (confirmName === selectedCourse.title) {
+                try {
+                    const response = await fetch(`../api/courses.php?type=courses&id=${selectedCourse.id}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(result.message || 'Course has been permanently deleted.');
+                        selectedCourse = null;
+                        
+                        // Return to instructor dashboard
+                        instructorCoursesSection.style.display = 'block';
+                        courseManagerSection.style.display = 'none';
+                        breadcrumb.style.display = 'none';
+                        loadInstructorCourses();
+                    } else {
+                        alert(result.message || 'Failed to delete course.');
+                    }
+                } catch (error) {
+                    console.error('Delete Course Error:', error);
+                    alert('An error occurred during deletion. Please check the console.');
+                }
+            } else if (confirmName !== null) {
+                alert('Course title did not match. Deletion cancelled.');
+            }
+        });
+    }
+
     document.querySelectorAll('.instructor-tab').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.instructor-tab').forEach(b => {

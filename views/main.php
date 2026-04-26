@@ -178,6 +178,13 @@ include 'content/navbar.php';
                     <div id="categories-list">
                         <!-- Categories will be listed here -->
                     </div>
+
+                    <div style="margin-top: 3rem; padding-top: 2rem; border-top: 2px dashed #fee2e2;">
+                        <button id="delete-course-btn" class="btn btn-primary" style="background: #dc2626; border-color: #dc2626; width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <i data-lucide="trash-2" style="width: 18px;"></i> Delete Entire Course
+                        </button>
+                        <p style="font-size: 0.75rem; color: #991b1b; text-align: center; margin-top: 8px;">Warning: This action is permanent and will delete all modules, activities, and student progress.</p>
+                    </div>
                 </div>
 
                 <!-- Activity/Lesson Management -->
