@@ -37,6 +37,14 @@ try {
         echo "<p style='color: green;'>✅ Re-created 'submissions' table with new structure.</p>";
     }
 
+    // 4. Add parent_id to comments
+    $checkComments = $db->query("SHOW COLUMNS FROM comments LIKE 'parent_id'");
+    if ($checkComments->rowCount() == 0) {
+        $db->exec("ALTER TABLE comments ADD COLUMN parent_id INT DEFAULT NULL AFTER user_id");
+        $db->exec("ALTER TABLE comments ADD FOREIGN KEY (parent_id) REFERENCES comments(id) ON DELETE CASCADE");
+        echo "<p style='color: green;'>✅ Added 'parent_id' to comments table for threading.</p>";
+    }
+
     echo "<h3>Migration Complete! Your materials are now visible in the modules.</h3>";
 } catch (Exception $e) {
     echo "<p style='color: red;'>❌ Migration Failed: " . $e->getMessage() . "</p>";

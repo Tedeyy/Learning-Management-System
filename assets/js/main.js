@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const registerView = document.getElementById('register-view');
     const instructorDashboard = document.getElementById('instructor-dashboard');
     const studentDashboard = document.getElementById('student-dashboard');
-    const learningView = document.getElementById('learning-view'); 
+    const learningModulesView = document.getElementById('learning-modules-view');
+    const learningContentView = document.getElementById('learning-content-view');
     const authContainer = document.querySelector('.auth-container');
     const navbar = document.getElementById('navbar');
 
@@ -22,10 +23,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Learning View Elements
     const learningCategoriesList = document.getElementById('learning-categories-list');
-    const learningActivityContent = document.getElementById('learning-activity-content');
-    const learningNoSelection = document.getElementById('learning-no-selection');
     const learningCurriculumItems = document.getElementById('learning-curriculum-items');
     const backToCatalogBtn = document.getElementById('back-to-catalog');
+    const backToModulesBtn = document.getElementById('back-to-modules');
 
     // Instructor Modal Elements
     const instructorModalOverlay = document.getElementById('instructor-modal-overlay');
@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const switchView = (viewToShow) => {
+        console.log('Switching to view:', viewToShow.id);
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         setTimeout(() => {
             viewToShow.classList.add('active');
@@ -110,6 +111,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 switchView(loginView);
                 toggleAuth.textContent = 'Sign Up';
             }
+        });
+    }
+
+    const goToRegister = document.getElementById('go-to-register');
+    if (goToRegister) {
+        goToRegister.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(registerView);
+            if (toggleAuth) toggleAuth.textContent = 'Login';
+        });
+    }
+
+    const goToLogin = document.getElementById('go-to-login');
+    if (goToLogin) {
+        goToLogin.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(loginView);
+            if (toggleAuth) toggleAuth.textContent = 'Sign Up';
         });
     }
 
@@ -311,7 +330,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadInstructorCourses() {
         try {
             const response = await fetch(`../api/courses.php?type=courses&instructor_id=${currentUser.id}`);
-            const courses = await response.json();
+            const text = await response.text();
+            let courses;
+            try {
+                courses = JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse courses JSON:', text);
+                return;
+            }
             const list = document.getElementById('instructor-courses-list');
             if(!list || !Array.isArray(courses)) return;
             list.innerHTML = courses.length ? '' : '<p>No courses yet.</p>';
@@ -361,6 +387,43 @@ document.addEventListener('DOMContentLoaded', () => {
         if(catDetails) catDetails.style.display = 'none';
         if(actList) actList.innerHTML = '';
         loadCategories();
+    }
+
+    // --- Course Deletion Logic ---
+    const deleteCourseBtn = document.getElementById('delete-course-btn');
+    if (deleteCourseBtn) {
+        deleteCourseBtn.addEventListener('click', async () => {
+            if (!selectedCourse) return;
+
+            const confirmName = prompt(`Are you sure you want to delete "${selectedCourse.title}"?\n\nThis action is PERMANENT and cannot be undone. All modules, activities, and student records will be destroyed.\n\nTo confirm, type the course title exactly as shown above:`);
+            
+            if (confirmName === selectedCourse.title) {
+                try {
+                    const response = await fetch(`../api/courses.php?type=courses&id=${selectedCourse.id}`, {
+                        method: 'DELETE'
+                    });
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(result.message || 'Course has been permanently deleted.');
+                        selectedCourse = null;
+                        
+                        // Return to instructor dashboard
+                        instructorCoursesSection.style.display = 'block';
+                        courseManagerSection.style.display = 'none';
+                        breadcrumb.style.display = 'none';
+                        loadInstructorCourses();
+                    } else {
+                        alert(result.message || 'Failed to delete course.');
+                    }
+                } catch (error) {
+                    console.error('Delete Course Error:', error);
+                    alert('An error occurred during deletion. Please check the console.');
+                }
+            } else if (confirmName !== null) {
+                alert('Course title did not match. Deletion cancelled.');
+            }
+        });
     }
 
     document.querySelectorAll('.instructor-tab').forEach(btn => {
@@ -544,11 +607,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openLearningView(course) {
+        console.log('Opening modules list for course:', course.title);
         selectedCourse = course; selectedCourse.id = course.course_id || course.id; 
-        document.getElementById('learning-course-title').textContent = course.title;
-        learningNoSelection.style.display = 'block'; learningActivityContent.style.display = 'none';
+        const titleEl = document.getElementById('learning-course-title');
+        if(titleEl) titleEl.textContent = course.title;
+        
         learningCategoriesList.innerHTML = '<p style="padding: 1rem; color: #999;">Loading modules...</p>';
-        switchView(learningView); loadLearningCategories();
+        switchView(learningModulesView); 
+        loadLearningCategories();
+    }
+
+    if(backToModulesBtn) {
+        backToModulesBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Returning to modules list');
+            switchView(learningModulesView);
+        });
     }
 
     async function loadLearningCategories() {
@@ -561,11 +635,44 @@ document.addEventListener('DOMContentLoaded', () => {
             categories.forEach(cat => {
                 const t = parseInt(cat.total_items) || 0; const c = parseInt(cat.completed_items) || 0;
                 const perc = t > 0 ? Math.round((c/t)*100) : 0; totalItems += t; totalCompleted += c;
-                const el = document.createElement('div'); el.className = 'category-item'; el.style.padding = '15px'; el.style.borderRadius = '15px'; el.style.cursor = 'pointer'; el.style.transition = 'all 0.2s'; el.style.marginBottom = '10px'; el.style.background = selectedCategory?.id == cat.id ? '#e8f0fe' : '#f9f9fb'; el.style.border = selectedCategory?.id == cat.id ? '1px solid var(--primary-color)' : '1px solid #eee';
-                const progressBarHTML = t > 0 ? `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;"><span style="font-weight: 600; font-size: 0.95rem; color: ${selectedCategory?.id == cat.id ? 'var(--primary-color)' : '#333'}">${cat.name}</span><span style="font-size: 0.75rem; font-weight: 700; color: #666;">${perc}%</span></div><div style="height: 6px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden;"><div style="height: 100%; width: ${perc}%; background: ${perc === 100 ? '#2ecc71' : 'var(--primary-color)'}; transition: width 0.5s ease;"></div></div>` : `<span style="font-weight: 600; font-size: 0.95rem; color: ${selectedCategory?.id == cat.id ? 'var(--primary-color)' : '#333'}">${cat.name}</span>`;
-                el.innerHTML = progressBarHTML; el.addEventListener('click', () => { selectedCategory = cat; loadLearningCategories(); loadLearningCurriculum(); });
+                const el = document.createElement('div'); 
+                el.className = 'category-item'; 
+                el.style.padding = '2rem'; 
+                el.style.borderRadius = '20px'; 
+                el.style.cursor = 'pointer'; 
+                el.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'; 
+                el.style.marginBottom = '1.5rem'; 
+                el.style.background = 'white';
+                el.style.border = '1px solid #eee';
+                el.style.boxShadow = '0 10px 30px rgba(0,0,0,0.02)';
+                
+                const progressBarHTML = t > 0 ? `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="margin: 0; color: #333; font-size: 1.2rem;">${cat.name}</h3>
+                        <span style="font-size: 0.9rem; font-weight: 800; color: var(--secondary-color); background: #f0f7ff; padding: 5px 12px; border-radius: 50px;">${perc}%</span>
+                    </div>
+                    <div style="height: 10px; width: 100%; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
+                        <div style="height: 100%; width: ${perc}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); transition: width 0.6s ease;"></div>
+                    </div>
+                    <div style="margin-top: 1rem; font-size: 0.8rem; color: #999; display: flex; align-items: center; gap: 5px;">
+                        <i data-lucide="info" style="width: 14px;"></i> Click to open module content
+                    </div>
+                ` : `
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0; color: #333; font-size: 1.2rem;">${cat.name}</h3>
+                        <i data-lucide="chevron-right" style="color: #ccc;"></i>
+                    </div>
+                `;
+                el.innerHTML = progressBarHTML; 
+                el.addEventListener('click', () => { 
+                    console.log('Opening module content:', cat.name);
+                    selectedCategory = cat; 
+                    switchView(learningContentView);
+                    loadLearningCurriculum(); 
+                });
                 learningCategoriesList.appendChild(el);
             });
+            if(typeof lucide !== 'undefined') lucide.createIcons();
             if (totalItems > 0) {
                 const totalPerc = Math.round((totalCompleted/totalItems)*100); const totalContainer = document.createElement('div'); totalContainer.style.marginTop = '2rem'; totalContainer.style.paddingTop = '1.5rem'; totalContainer.style.borderTop = '1px solid #eee';
                 totalContainer.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;"><span style="font-weight: 700; font-size: 0.85rem; color: #666; text-transform: uppercase;">Total Progress</span><span style="font-weight: 800; font-size: 1.1rem; color: var(--secondary-color);">${totalPerc}%</span></div><div style="height: 10px; width: 100%; background: #eee; border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);"><div style="height: 100%; width: ${totalPerc}%; background: linear-gradient(90deg, var(--primary-color), var(--secondary-color)); transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);"></div></div>`;
@@ -588,9 +695,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function loadLearningCurriculum() {
-        learningNoSelection.style.display = 'none'; learningActivityContent.style.display = 'block';
         const moduleNameEl = document.getElementById('learning-module-name');
         if(moduleNameEl) moduleNameEl.textContent = selectedCategory.name;
+
+        // Fetch latest category stats for accurate progress bar
+        try {
+            const statsRes = await fetch(`../api/courses.php?type=categories&course_id=${selectedCourse.id}&student_id=${currentUser.id}`);
+            const categories = await statsRes.json();
+            const currentCat = categories.find(c => c.id == selectedCategory.id);
+            if(currentCat) {
+                const t = parseInt(currentCat.total_items) || 0;
+                const c = parseInt(currentCat.completed_items) || 0;
+                const perc = t > 0 ? Math.round((c/t)*100) : 0;
+                const progressBar = document.getElementById('module-progress-bar');
+                const progressText = document.getElementById('module-progress-text');
+                if(progressBar) progressBar.style.width = `${perc}%`;
+                if(progressText) progressText.textContent = `${perc}%`;
+                // Update the memory object too
+                selectedCategory.completed_items = currentCat.completed_items;
+                selectedCategory.total_items = currentCat.total_items;
+            }
+        } catch (err) { console.error("Failed to update progress bar stats:", err); }
+
         learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading lessons...</p>';
         try {
             const actRes = await fetch(`../api/courses.php?type=activities&category_id=${selectedCategory.id}&student_id=${currentUser.id}`);
@@ -619,7 +745,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 learningCurriculumItems.appendChild(card);
             });
             if(typeof lucide !== 'undefined') lucide.createIcons();
-        } catch (e) {}
+        } catch (e) {
+            console.error('Error loading curriculum:', e);
+            learningCurriculumItems.innerHTML = '<p style="padding: 2rem; color: red; text-align: center;">An error occurred while loading content. Please try again.</p>';
+        }
     }
 
     if(backToCatalogBtn) { backToCatalogBtn.addEventListener('click', (e) => { e.preventDefault(); selectedCategory = null; switchView(studentDashboard); }); }
@@ -655,13 +784,126 @@ document.addEventListener('DOMContentLoaded', () => {
         } 
     }
     document.querySelectorAll('.logout-btn').forEach(btn => btn.addEventListener('click', () => { localStorage.removeItem('currentUser'); window.location.reload(); }));
-    if(loginForm) { loginForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { email: document.getElementById('login-email').value, password: document.getElementById('login-password').value }; const response = await fetch('../api/login.php', { method: 'POST', body: JSON.stringify(data) }); const result = await response.json(); if (response.ok) { localStorage.setItem('currentUser', JSON.stringify(result.user)); window.location.reload(); } }); }
+    if(loginForm) { 
+        loginForm.addEventListener('submit', async (e) => { 
+            e.preventDefault(); 
+            const data = { 
+                email: document.getElementById('login-email').value, 
+                password: document.getElementById('login-password').value 
+            }; 
+            try {
+                const response = await fetch('../api/login.php', { method: 'POST', body: JSON.stringify(data) }); 
+                const text = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (jsonErr) {
+                    console.error('API Error Response:', text);
+                    const msgEl = document.getElementById('login-message');
+                    if(msgEl) {
+                        if (text.includes('__test')) {
+                            msgEl.innerHTML = '<strong>Hosting Security Challenge:</strong> Please <a href="../api/login.php" target="_blank" style="color: blue; text-decoration: underline;">click here</a> to verify your browser, then refresh this page and try again.';
+                        } else {
+                            msgEl.textContent = 'Server Error: The server returned an invalid response.';
+                        }
+                        msgEl.style.display = 'block';
+                        msgEl.style.color = '#721c24';
+                        msgEl.style.background = '#f8d7da';
+                        msgEl.style.padding = '10px';
+                        msgEl.style.borderRadius = '5px';
+                        msgEl.style.marginTop = '10px';
+                    }
+                    return;
+                }
+                
+                if (response.ok) { 
+                    localStorage.setItem('currentUser', JSON.stringify(result.user)); 
+                    window.location.reload(); 
+                } else {
+                    const msgEl = document.getElementById('login-message');
+                    if(msgEl) {
+                        msgEl.textContent = result.message || 'Login failed.';
+                        msgEl.style.display = 'block';
+                        msgEl.style.color = 'red';
+                    }
+                }
+            } catch (fetchErr) {
+                console.error('Login fetch error:', fetchErr);
+            }
+        }); 
+    }
+
+    if (registerForm) {
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.textContent;
+            
+            const data = {
+                first_name: document.getElementById('reg-fname').value,
+                last_name: document.getElementById('reg-lname').value,
+                middle_name: document.getElementById('reg-mname').value,
+                role: document.getElementById('reg-role').value,
+                birthdate: document.getElementById('reg-birthdate').value,
+                gender: document.getElementById('reg-gender').value,
+                address: document.getElementById('reg-address').value,
+                contact_number: document.getElementById('reg-contact').value,
+                email: document.getElementById('reg-email').value,
+                password: document.getElementById('reg-password').value
+            };
+
+            const msgEl = document.getElementById('register-message');
+            if (msgEl) msgEl.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating Account...';
+
+            try {
+                const response = await fetch('../api/register.php', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+
+                if (msgEl) {
+                    msgEl.textContent = result.message;
+                    msgEl.style.display = 'block';
+                    msgEl.style.color = response.ok ? '#2ecc71' : '#ff4d4d';
+                }
+
+                if (response.ok) {
+                    registerForm.reset();
+                    setTimeout(() => switchView(loginView), 2000);
+                }
+            } catch (err) {
+                console.error('Registration error:', err);
+                if (msgEl) {
+                    msgEl.textContent = 'System Error. Please try again later.';
+                    msgEl.style.display = 'block';
+                    msgEl.style.color = '#ff4d4d';
+                }
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+            }
+        });
+    }
     if(addCourseForm) { addCourseForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { instructor_id: currentUser.id, title: document.getElementById('course-title').value, description: document.getElementById('course-desc').value }; const response = await fetch('../api/courses.php?type=courses', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { loadInstructorCourses(); addCourseForm.reset(); } }); }
     if(searchInput) { searchInput.addEventListener('input', (e) => { loadStudentCourses(e.target.value); }); }
 
     function getPreviewHTML(url, type) {
         if (!url) return '';
-        if (url.includes('docs.google.com/forms')) { const embedUrl = url.includes('/viewform') ? url.replace('/viewform', '/viewform?embedded=true') : url; return `<iframe src="${embedUrl}" width="100%" height="600" frameborder="0" marginheight="0" marginwidth="0" style="border-radius: 10px; background: white;">Loading…</iframe>`; }
+        if (url.includes('docs.google.com/forms')) { 
+            return `<div style="padding: 2rem; background: #fdf2f2; border-radius: 15px; text-align: center; border: 1px solid #fee2e2;">
+                <div style="margin-bottom: 1rem;">
+                    <i data-lucide="file-text" style="width: 48px; height: 48px; color: #b91c1c;"></i>
+                </div>
+                <h4 style="margin-bottom: 0.5rem; color: #b91c1c;">Google Form Activity</h4>
+                <p style="font-size: 0.85rem; color: #7f1d1d; margin-bottom: 1.5rem;">This activity requires you to complete a Google Form.</p>
+                <a href="${url}" target="_blank" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 8px; background: #7c3aed; border-color: #7c3aed;">
+                    Open Google Form <i data-lucide="external-link" style="width: 16px;"></i>
+                </a>
+            </div>`; 
+        }
         if (url.includes('youtube.com') || url.includes('youtu.be')) { const vidId = url.split('v=')[1] || url.split('/').pop(); return `<iframe width="100%" height="315" src="https://www.youtube.com/embed/${vidId}" frameborder="0" allowfullscreen style="border-radius: 10px;"></iframe>`; }
         if (type === 'pdf' || url.endsWith('.pdf')) { return `<iframe src="${url}" width="100%" height="500px" style="border: none; border-radius: 10px;"></iframe>`; }
         return `<div style="padding: 1rem; background: #eee; border-radius: 10px; text-align: center;"><a href="${url}" target="_blank" style="color: var(--secondary-color); font-weight: 600;">Open Resource <i data-lucide="external-link" style="width: 14px;"></i></a></div>`;
@@ -735,5 +977,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if(addMaterialForm) {
         addMaterialForm.addEventListener('submit', async (e) => { e.preventDefault(); const data = { course_id: selectedCourse.id, category_id: selectedCategory.id, title: document.getElementById('mat-title').value, description: document.getElementById('mat-desc').value, url: document.getElementById('mat-url').value, material_type: document.getElementById('mat-type').value }; const response = await fetch('../api/courses.php?type=materials', { method: 'POST', body: JSON.stringify(data) }); if (response.ok) { addMaterialForm.reset(); document.getElementById('add-material-container').style.display = 'none'; loadCurriculumItems(); } });
+    }
+
+    if(addCategoryForm) {
+        addCategoryForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                course_id: selectedCourse.id,
+                name: document.getElementById('cat-name').value
+            };
+            const response = await fetch('../api/courses.php?type=categories', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            if (response.ok) {
+                addCategoryForm.reset();
+                loadCategories();
+            }
+        });
     }
 });

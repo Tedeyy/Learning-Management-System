@@ -39,6 +39,28 @@ EduReady follows a **Client-Server Architecture** with a decoupled frontend and 
 
 ---
 
+## 🔄 User Flow
+
+EduReady is designed with a logical, step-by-step navigation system to ensure clarity for both educators and learners.
+
+### 🎓 Student Learning Journey (3-Step Flow)
+1.  **Step 1: Discover & Enrol** (Student Dashboard)
+    - Browse available courses, search by title or description, and enrol instantly.
+2.  **Step 2: Course Navigation** (Module Overview)
+    - Upon selecting a course, students see a clean list of modules. Each module features a progress bar tracking completion of its internal activities and materials.
+3.  **Step 3: Deep Learning** (Module Content View)
+    - Selecting a module opens a dedicated view containing only the lessons, videos, and assessments for that specific topic, providing a distraction-free learning environment.
+
+### 🛠️ Instructor Management Flow
+1.  **Step 1: Course Orchestration** (Instructor Dashboard)
+    - Create new courses and get an bird's-eye view of your teaching portfolio.
+2.  **Step 2: Curriculum Design** (Course Manager)
+    - Structure your course by adding modules. Within each module, upload learning materials or link interactive activities.
+3.  **Step 3: Progress Monitoring** (Student Roster)
+    - Access the Student Actions menu to track individual performance, view completion metrics, and manage enrollments in real-time.
+
+---
+
 ## ✨ Key Features
 
 ### 📖 For Students

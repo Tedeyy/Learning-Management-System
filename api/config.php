@@ -17,8 +17,10 @@ function loadEnv($path) {
     foreach ($lines as $line) {
         $line = trim($line);
         if ($line === '' || strpos($line, '#') === 0 || strpos($line, '=') === false) continue;
-        list($name, $value) = explode('=', $line, 2);
-        $_ENV[trim($name)] = trim($value);
+        $parts = explode('=', $line, 2);
+        if (count($parts) === 2) {
+            $_ENV[trim($parts[0])] = trim($parts[1]);
+        }
     }
 }
 

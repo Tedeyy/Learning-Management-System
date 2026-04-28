@@ -295,7 +295,14 @@ try {
             if ($stmt->execute()) { echo json_encode(["message" => "Activity updated"]); }
         }
     } elseif ($method === 'DELETE') {
-        if ($type === 'enrollments') {
+        if ($type === 'courses') {
+            $course_id = $_GET['id'] ?? null;
+            if (!$course_id) { http_response_code(400); echo json_encode(["message" => "Course ID is required."]); exit(); }
+            $query = "DELETE FROM courses WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindValue(":id", $course_id);
+            if ($stmt->execute()) { echo json_encode(["message" => "Course deleted successfully."]); }
+        } elseif ($type === 'enrollments') {
             $course_id = $_GET['course_id'] ?? null;
             $student_id = $_GET['student_id'] ?? null;
             
@@ -344,7 +351,7 @@ try {
             if ($stmt->execute()) { echo json_encode(["message" => "Comment deleted"]); }
         }
     }
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(["message" => "API Error: " . $e->getMessage()]);
 }
