@@ -4,9 +4,22 @@ include 'content/navbar.php';
 ?>
 
 <main class="auth-container">
+    <!-- Welcome/Start View -->
+    <div id="welcome-view" class="auth-card view active" style="max-width: 500px; text-align: center;">
+        <div style="width: 80px; height: 80px; background: #eff6ff; color: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 2rem;">
+            <i data-lucide="book-open" style="width: 40px; height: 40px;"></i>
+        </div>
+        <h2 style="font-size: 2.5rem; margin-bottom: 1rem;">Let's Start Reviewing</h2>
+        <p style="font-size: 1.1rem; color: #64748b; margin-bottom: 2.5rem;">Access the catalog and start tracking your progress today. You can always sign in later to save your data permanently.</p>
+        <button id="start-anonymous" class="btn btn-primary" style="width: 100%; padding: 1.2rem; font-size: 1.1rem; font-weight: 700; box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);">Start Learning Now</button>
+        <div class="auth-footer" style="margin-top: 2rem; border-top: 1px solid #eee; padding-top: 1.5rem;">
+            Already have an account? <a href="#" id="go-to-login">Sign In</a>
+        </div>
+    </div>
+
     <!-- Login View -->
-    <div id="login-view" class="auth-card view active">
-        <h2>Welcome</h2>
+    <div id="login-view" class="auth-card view">
+        <h2>Welcome Back</h2>
         <p>Login to your account to continue your learning journey.</p>
         <div id="login-message" style="margin-bottom: 1rem; text-align: center; font-size: 0.9rem; display: none"></div>
         <form id="login-form">
@@ -22,6 +35,8 @@ include 'content/navbar.php';
         </form>
         <div class="auth-footer">
             Don't have an account? <a href="#" id="go-to-register">Create Account</a>
+            <br><br>
+            <a href="#" id="back-to-welcome" style="font-size: 0.8rem; color: #999; text-decoration: none;">&larr; Back to Welcome</a>
         </div>
     </div>
 

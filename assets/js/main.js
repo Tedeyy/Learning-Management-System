@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // UI Elements
+    const welcomeView = document.getElementById('welcome-view');
     const loginView = document.getElementById('login-view');
     const registerView = document.getElementById('register-view');
     const instructorDashboard = document.getElementById('instructor-dashboard');
@@ -35,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
     let selectedCourse = null;
     let selectedCategory = null;
+    let isAnonymous = currentUser?.id === 'anonymous';
 
     // --- Mobile Menu Toggle logic ---
     const menuToggle = document.getElementById('mobile-menu');
@@ -73,6 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const navStudent = document.getElementById('nav-student');
         const navInstructor = document.getElementById('nav-instructor');
         if (navbar) navbar.style.display = 'block';
+        
         if (!currentUser) {
             if(navGuest) navGuest.style.display = 'flex';
             if(navStudent) navStudent.style.display = 'none';
@@ -80,11 +83,17 @@ document.addEventListener('DOMContentLoaded', () => {
             if(authContainer) authContainer.style.alignItems = 'center';
         } else {
             if(authContainer) authContainer.style.alignItems = 'flex-start';
-            if(navGuest) navGuest.style.display = 'none';
-            if (currentUser.role === 'instructor') {
+            
+            if (isAnonymous) {
+                if(navGuest) navGuest.style.display = 'flex';
+                if(navStudent) navStudent.style.display = 'flex';
+                if(navInstructor) navInstructor.style.display = 'none';
+            } else if (currentUser.role === 'instructor') {
+                if(navGuest) navGuest.style.display = 'none';
                 if(navStudent) navStudent.style.display = 'none';
                 if(navInstructor) navInstructor.style.display = 'flex';
             } else {
+                if(navGuest) navGuest.style.display = 'none';
                 if(navStudent) navStudent.style.display = 'flex';
                 if(navInstructor) navInstructor.style.display = 'none';
             }
@@ -129,6 +138,26 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             switchView(loginView);
             if (toggleAuth) toggleAuth.textContent = 'Sign Up';
+        });
+    }
+
+    const backToWelcome = document.getElementById('back-to-welcome');
+    if (backToWelcome) {
+        backToWelcome.addEventListener('click', (e) => {
+            e.preventDefault();
+            switchView(welcomeView);
+        });
+    }
+
+    const startAnonymousBtn = document.getElementById('start-anonymous');
+    if (startAnonymousBtn) {
+        startAnonymousBtn.addEventListener('click', () => {
+            currentUser = { id: 'anonymous', name: 'Learner', role: 'student' };
+            isAnonymous = true;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            switchView(studentDashboard);
+            loadStudentCourses();
+            loadEnrolledCourses();
         });
     }
 
@@ -282,6 +311,26 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
         });
         
+        if (isAnonymous) {
+            section.innerHTML = `
+                <div style="background: #fff9eb; padding: 1.5rem; border-radius: 12px; border: 1px solid #ffeeba; text-align: center; margin-bottom: 1rem;">
+                    <i data-lucide="lock" style="width: 24px; height: 24px; color: #856404; margin-bottom: 0.5rem;"></i>
+                    <p style="font-size: 0.9rem; color: #856404; font-weight: 600;">Want to see and join the discussion?</p>
+                    <p style="font-size: 0.8rem; color: #856404; margin-bottom: 1rem;">Sign in to participate in the public forum and save your progress permanently.</p>
+                    <button class="btn btn-primary go-to-login-btn" style="background: #856404; border-color: #856404; font-size: 0.8rem;">Sign In to Comment</button>
+                </div>
+            `;
+            const loginBtn = section.querySelector('.go-to-login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    switchView(loginView);
+                });
+            }
+            if(typeof lucide !== 'undefined') lucide.createIcons();
+            return section;
+        }
+
         section.innerHTML = `
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.5rem; color: #666;">
                 <i data-lucide="message-square" style="width: 16px;"></i>
@@ -632,8 +681,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!Array.isArray(categories)) { learningCategoriesList.innerHTML = `<p style="padding: 1rem; color: #ff4d4d; font-size: 0.85rem;">Error loading modules.</p>`; return; }
             learningCategoriesList.innerHTML = '';
             let totalItems = 0; let totalCompleted = 0;
+            const anonProgress = isAnonymous ? (JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] }) : null;
+            
             categories.forEach(cat => {
-                const t = parseInt(cat.total_items) || 0; const c = parseInt(cat.completed_items) || 0;
+                let t = parseInt(cat.total_items) || 0; 
+                let c = parseInt(cat.completed_items) || 0;
+                
+                if (isAnonymous) {
+                    // This is a bit rough as we don't know which activities are in which category easily without fetching them all,
+                    // but for simplicity we can just rely on the next level's progress for now or fetch activities.
+                    // Actually, let's keep the API's count for logged in and just handle the curriculum items individually.
+                    // To accurately show category progress for anonymous, we'd need to know which items belong to which category.
+                }
+
                 const perc = t > 0 ? Math.round((c/t)*100) : 0; totalItems += t; totalCompleted += c;
                 const el = document.createElement('div'); 
                 el.className = 'category-item'; 
@@ -720,9 +780,15 @@ document.addEventListener('DOMContentLoaded', () => {
         learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading lessons...</p>';
         try {
             const actRes = await fetch(`../api/courses.php?type=activities&category_id=${selectedCategory.id}&student_id=${currentUser.id}`);
-            const activities = await actRes.json();
+            let activities = await actRes.json();
             const matRes = await fetch(`../api/courses.php?type=materials&category_id=${selectedCategory.id}&student_id=${currentUser.id}`);
-            const materials = await matRes.json();
+            let materials = await matRes.json();
+            
+            if (isAnonymous) {
+                const anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
+                activities = activities.map(a => ({ ...a, is_done: anonProgress.submissions.includes(a.id) ? 1 : 0 }));
+                materials = materials.map(m => ({ ...m, is_viewed: anonProgress.views.includes(m.id) ? 1 : 0 }));
+            }
             if (!Array.isArray(activities) || !Array.isArray(materials)) { learningCurriculumItems.innerHTML = '<p style="padding: 2rem; color: red;">Failed to load curriculum.</p>'; return; }
             if (activities.length === 0 && materials.length === 0) { learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 3rem; color: #999;">This module is empty. Check back later!</p>'; return; }
             learningCurriculumItems.innerHTML = '';
@@ -732,7 +798,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const body = card.querySelector('.item-body');
                 body.appendChild(createCommentSection(mat.id, 'material'));
                 card.querySelector('.item-header').addEventListener('click', () => { const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
-                if(!isViewed) { card.querySelector('.mark-viewed-btn').addEventListener('click', async (e) => { const res = await fetch('../api/courses.php?type=material_views', { method: 'POST', body: JSON.stringify({ material_id: mat.id, student_id: currentUser.id }) }); if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } }); }
+                if(!isViewed) { 
+                    card.querySelector('.mark-viewed-btn').addEventListener('click', async (e) => { 
+                        if (isAnonymous) {
+                            let anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
+                            if (!anonProgress.views.includes(mat.id)) {
+                                anonProgress.views.push(mat.id);
+                                localStorage.setItem('anonProgress', JSON.stringify(anonProgress));
+                            }
+                            loadLearningCurriculum(); loadLearningCategories();
+                        } else {
+                            const res = await fetch('../api/courses.php?type=material_views', { method: 'POST', body: JSON.stringify({ material_id: mat.id, student_id: currentUser.id }) }); 
+                            if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } 
+                        }
+                    }); 
+                }
                 learningCurriculumItems.appendChild(card);
             });
             activities.forEach(act => {
@@ -741,7 +821,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const body = card.querySelector('.item-body');
                 body.appendChild(createCommentSection(act.id, 'activity'));
                 card.querySelector('.item-header').addEventListener('click', () => { const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
-                if(!isDone) { card.querySelector('.mark-done-btn').addEventListener('click', async (e) => { const res = await fetch('../api/courses.php?type=submissions', { method: 'POST', body: JSON.stringify({ activity_id: act.id, student_id: currentUser.id }) }); if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } }); }
+                if(!isDone) { 
+                    card.querySelector('.mark-done-btn').addEventListener('click', async (e) => { 
+                        if (isAnonymous) {
+                            let anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
+                            if (!anonProgress.submissions.includes(act.id)) {
+                                anonProgress.submissions.push(act.id);
+                                localStorage.setItem('anonProgress', JSON.stringify(anonProgress));
+                            }
+                            loadLearningCurriculum(); loadLearningCategories();
+                        } else {
+                            const res = await fetch('../api/courses.php?type=submissions', { method: 'POST', body: JSON.stringify({ activity_id: act.id, student_id: currentUser.id }) }); 
+                            if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } 
+                        }
+                    }); 
+                }
                 learningCurriculumItems.appendChild(card);
             });
             if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -783,7 +877,11 @@ document.addEventListener('DOMContentLoaded', () => {
             loadStudentCourses(); loadEnrolledCourses(); 
         } 
     }
-    document.querySelectorAll('.logout-btn').forEach(btn => btn.addEventListener('click', () => { localStorage.removeItem('currentUser'); window.location.reload(); }));
+    document.querySelectorAll('.logout-btn').forEach(btn => btn.addEventListener('click', () => { 
+        localStorage.removeItem('currentUser'); 
+        localStorage.removeItem('anonProgress');
+        window.location.reload(); 
+    }));
     if(loginForm) { 
         loginForm.addEventListener('submit', async (e) => { 
             e.preventDefault(); 

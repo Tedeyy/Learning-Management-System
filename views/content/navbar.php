@@ -7,8 +7,10 @@
         
         <!-- Guest Links (Login/Register) -->
         <ul class="nav-links" id="nav-guest">
-            <li><a href="../index.html">Home</a></li>
-            <li><a href="#" id="toggle-auth">Sign Up</a></li>
+            <li style="display: flex; align-items: center; gap: 1rem; color: #64748b; font-size: 0.9rem;">
+                <span>Want to track your progress?</span>
+                <a href="#" id="toggle-auth" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Sign In</a>
+            </li>
         </ul>
 
         <!-- Student Links -->

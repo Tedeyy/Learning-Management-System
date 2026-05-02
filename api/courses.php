@@ -16,8 +16,12 @@ if ($db === null) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
-$type = $_GET['type'] ?? 'courses';
 $now = date('Y-m-d H:i:s');
+
+// Initialize anonymous session progress if not exists
+if (!isset($_SESSION['anon_submissions'])) $_SESSION['anon_submissions'] = [];
+if (!isset($_SESSION['anon_views'])) $_SESSION['anon_views'] = [];
+if (!isset($_SESSION['anon_enrollments'])) $_SESSION['anon_enrollments'] = [];
 
 try {
     if ($method === 'GET') {
@@ -52,15 +56,39 @@ try {
                 $params[':sid_where'] = $student_id;
             }
             
-            if (count($where) > 0) {
-                $query .= " WHERE " . implode(" AND ", $where);
+            if ($student_id === 'anonymous') {
+                $query = "SELECT c.id, c.title, c.description, c.created_at, CONCAT(u.first_name, ' ', u.last_name) as instructor_name FROM courses c JOIN users u ON c.instructor_id = u.id";
+                $where = [];
+                if ($search) { $where[] = "(c.title LIKE :search OR c.description LIKE :search)"; $params[':search'] = "%$search%"; }
+                if (count($where) > 0) $query .= " WHERE " . implode(" AND ", $where);
+                $query .= " ORDER BY c.created_at DESC";
+                
+                $stmt = $db->prepare($query);
+                foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+                $stmt->execute();
+                $all_courses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Add enrollment status and filter for student view if needed
+                foreach ($all_courses as &$c) {
+                    $c['is_enrolled'] = in_array($c['id'], $_SESSION['anon_enrollments']) ? 1 : 0;
+                }
+                
+                // If student view (catalog), only show non-enrolled
+                if (!$instructor_id) {
+                    $all_courses = array_filter($all_courses, function($c) { return !$c['is_enrolled']; });
+                }
+                echo json_encode(array_values($all_courses));
+            } else {
+                if (count($where) > 0) {
+                    $query .= " WHERE " . implode(" AND ", $where);
+                }
+                
+                $query .= " ORDER BY c.created_at DESC";
+                $stmt = $db->prepare($query);
+                foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+                $stmt->execute();
+                echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
             }
-            
-            $query .= " ORDER BY c.created_at DESC";
-            $stmt = $db->prepare($query);
-            foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
-            $stmt->execute();
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         } elseif ($type === 'categories') {
             $course_id = $_GET['course_id'] ?? null;
             $student_id = $_GET['student_id'] ?? null;
@@ -80,9 +108,33 @@ try {
             $query .= " FROM activity_categories ac WHERE course_id = :course_id ORDER BY created_at ASC";
             
             $stmt = $db->prepare($query);
-            foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+            foreach ($params as $key => $val) { 
+                if ($student_id === 'anonymous' && ($key === ':sid1' || $key === ':sid2')) continue;
+                $stmt->bindValue($key, $val); 
+            }
             $stmt->execute();
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($student_id === 'anonymous') {
+                foreach ($results as &$cat) {
+                    $cat_id = $cat['id'];
+                    // We need to count how many of this category's items are in the session
+                    $stmtActs = $db->prepare("SELECT id FROM activities WHERE category_id = ?");
+                    $stmtActs->execute([$cat_id]);
+                    $actIds = $stmtActs->fetchAll(PDO::FETCH_COLUMN);
+                    
+                    $stmtMats = $db->prepare("SELECT id FROM learning_materials WHERE category_id = ?");
+                    $stmtMats->execute([$cat_id]);
+                    $matIds = $stmtMats->fetchAll(PDO::FETCH_COLUMN);
+                    
+                    $done = 0;
+                    foreach ($actIds as $aid) if (in_array($aid, $_SESSION['anon_submissions'])) $done++;
+                    foreach ($matIds as $mid) if (in_array($mid, $_SESSION['anon_views'])) $done++;
+                    
+                    $cat['completed_items'] = $done;
+                }
+            }
+            echo json_encode($results);
         } elseif ($type === 'activities') {
             $category_id = $_GET['category_id'] ?? null;
             $student_id = $_GET['student_id'] ?? null;
@@ -93,9 +145,15 @@ try {
             
             $stmt = $db->prepare($query);
             $stmt->bindParam(":category_id", $category_id);
-            if ($student_id) { $stmt->bindParam(":student_id", $student_id); }
+            if ($student_id && $student_id !== 'anonymous') { $stmt->bindParam(":student_id", $student_id); }
             $stmt->execute();
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+            $acts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($student_id === 'anonymous') {
+                foreach ($acts as &$a) {
+                    $a['is_done'] = in_array($a['id'], $_SESSION['anon_submissions']) ? 1 : 0;
+                }
+            }
+            echo json_encode($acts);
         } elseif ($type === 'materials') {
             $category_id = $_GET['category_id'] ?? null;
             $course_id = $_GET['course_id'] ?? null;
@@ -108,21 +166,42 @@ try {
             $stmt = $db->prepare($query);
             if ($category_id) { $stmt->bindParam(":category_id", $category_id); }
             else { $stmt->bindParam(":course_id", $course_id); }
-            if ($student_id) { $stmt->bindParam(":student_id", $student_id); }
+            if ($student_id && $student_id !== 'anonymous') { $stmt->bindParam(":student_id", $student_id); }
             $stmt->execute();
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+            $mats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($student_id === 'anonymous') {
+                foreach ($mats as &$m) {
+                    $m['is_viewed'] = in_array($m['id'], $_SESSION['anon_views']) ? 1 : 0;
+                }
+            }
+            echo json_encode($mats);
         } elseif ($type === 'enrollments') {
-            $student_id = $_GET['student_id'] ?? null;
-            $query = "SELECT e.course_id, e.enrolled_at, c.title, c.description, CONCAT(u.first_name, ' ', u.last_name) as instructor_name 
-                      FROM enrollments e 
-                      JOIN courses c ON e.course_id = c.id 
-                      JOIN users u ON c.instructor_id = u.id 
-                      WHERE e.student_id = :student_id 
-                      ORDER BY e.enrolled_at DESC";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(":student_id", $student_id);
-            $stmt->execute();
-            echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+            if ($student_id === 'anonymous') {
+                $enrolled_ids = $_SESSION['anon_enrollments'] ?? [];
+                if (empty($enrolled_ids)) {
+                    echo json_encode([]);
+                } else {
+                    $placeholders = implode(',', array_fill(0, count($enrolled_ids), '?'));
+                    $query = "SELECT c.id as course_id, c.title, c.description, CONCAT(u.first_name, ' ', u.last_name) as instructor_name 
+                              FROM courses c 
+                              JOIN users u ON c.instructor_id = u.id 
+                              WHERE c.id IN ($placeholders)";
+                    $stmt = $db->prepare($query);
+                    $stmt->execute($enrolled_ids);
+                    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+                }
+            } else {
+                $query = "SELECT e.course_id, e.enrolled_at, c.title, c.description, CONCAT(u.first_name, ' ', u.last_name) as instructor_name 
+                          FROM enrollments e 
+                          JOIN courses c ON e.course_id = c.id 
+                          JOIN users u ON c.instructor_id = u.id 
+                          WHERE e.student_id = :student_id 
+                          ORDER BY e.enrolled_at DESC";
+                $stmt = $db->prepare($query);
+                $stmt->bindParam(":student_id", $student_id);
+                $stmt->execute();
+                echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+            }
         } elseif ($type === 'course_enrollees') {
             $course_id = $_GET['course_id'] ?? null;
             $query = "SELECT u.id, u.first_name, u.last_name, u.email, e.enrolled_at 
@@ -220,23 +299,44 @@ try {
             $stmt->bindValue(":now", $now);
             if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material added"]); }
         } elseif ($type === 'enrollments') {
-            $query = "INSERT INTO enrollments (course_id, student_id) VALUES (:course_id, :student_id)";
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(":course_id", $data->course_id);
-            $stmt->bindValue(":student_id", $data->student_id);
-            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Enrolled successfully"]); }
+            if ($data->student_id === 'anonymous') {
+                if (!in_array($data->course_id, $_SESSION['anon_enrollments'])) {
+                    $_SESSION['anon_enrollments'][] = $data->course_id;
+                }
+                http_response_code(201); echo json_encode(["message" => "Enrolled successfully (Anonymous)"]);
+            } else {
+                $query = "INSERT INTO enrollments (course_id, student_id) VALUES (:course_id, :student_id)";
+                $stmt = $db->prepare($query);
+                $stmt->bindValue(":course_id", $data->course_id);
+                $stmt->bindValue(":student_id", $data->student_id);
+                if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Enrolled successfully"]); }
+            }
         } elseif ($type === 'submissions') {
-            $query = "INSERT INTO submissions (activity_id, student_id) VALUES (:activity_id, :student_id)";
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(":activity_id", $data->activity_id);
-            $stmt->bindValue(":student_id", $data->student_id);
-            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Activity completed"]); }
+            if ($data->student_id === 'anonymous') {
+                if (!in_array($data->activity_id, $_SESSION['anon_submissions'])) {
+                    $_SESSION['anon_submissions'][] = $data->activity_id;
+                }
+                http_response_code(201); echo json_encode(["message" => "Activity completed (Anonymous)"]);
+            } else {
+                $query = "INSERT INTO submissions (activity_id, student_id) VALUES (:activity_id, :student_id)";
+                $stmt = $db->prepare($query);
+                $stmt->bindValue(":activity_id", $data->activity_id);
+                $stmt->bindValue(":student_id", $data->student_id);
+                if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Activity completed"]); }
+            }
         } elseif ($type === 'material_views') {
-            $query = "INSERT INTO material_views (material_id, student_id) VALUES (:material_id, :student_id)";
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(":material_id", $data->material_id);
-            $stmt->bindValue(":student_id", $data->student_id);
-            if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material viewed"]); }
+            if ($data->student_id === 'anonymous') {
+                if (!in_array($data->material_id, $_SESSION['anon_views'])) {
+                    $_SESSION['anon_views'][] = $data->material_id;
+                }
+                http_response_code(201); echo json_encode(["message" => "Material viewed (Anonymous)"]);
+            } else {
+                $query = "INSERT INTO material_views (material_id, student_id) VALUES (:material_id, :student_id)";
+                $stmt = $db->prepare($query);
+                $stmt->bindValue(":material_id", $data->material_id);
+                $stmt->bindValue(":student_id", $data->student_id);
+                if ($stmt->execute()) { http_response_code(201); echo json_encode(["message" => "Material viewed"]); }
+            }
         } elseif ($type === 'comments') {
             try {
                 $query = "INSERT INTO comments (activity_id, material_id, user_id, parent_id, content, created_at) VALUES (:aid, :mid, :uid, :pid, :content, :now)";
