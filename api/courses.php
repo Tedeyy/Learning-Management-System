@@ -26,10 +26,16 @@ if (!isset($_SESSION['anon_enrollments'])) $_SESSION['anon_enrollments'] = [];
 
 try {
     if ($method === 'GET') {
+        $student_id = $_GET['student_id'] ?? null;
+        $instructor_id = $_GET['instructor_id'] ?? null;
+        $course_id = $_GET['course_id'] ?? null;
+        $category_id = $_GET['category_id'] ?? null;
+        $search = $_GET['search'] ?? null;
+        $activity_id = $_GET['activity_id'] ?? null;
+        $material_id = $_GET['material_id'] ?? null;
+        $user_id = $_GET['id'] ?? null; // for user_info and comments delete
+
         if ($type === 'courses') {
-            $instructor_id = $_GET['instructor_id'] ?? null;
-            $search = $_GET['search'] ?? null;
-            $student_id = $_GET['student_id'] ?? null;
             
             $query = "SELECT c.id, c.title, c.description, c.created_at, CONCAT(u.first_name, ' ', u.last_name) as instructor_name";
             $params = [];
@@ -95,9 +101,6 @@ try {
                 echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
             }
         } elseif ($type === 'categories') {
-            $course_id = $_GET['course_id'] ?? null;
-            $student_id = $_GET['student_id'] ?? null;
-            
             $query = "SELECT ac.*, 
                         (SELECT COUNT(*) FROM activities WHERE category_id = ac.id) + 
                         (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_items";
@@ -141,9 +144,6 @@ try {
             }
             echo json_encode($results);
         } elseif ($type === 'activities') {
-            $category_id = $_GET['category_id'] ?? null;
-            $student_id = $_GET['student_id'] ?? null;
-            
             $query = "SELECT a.*";
             if ($student_id) { $query .= ", (SELECT COUNT(*) FROM submissions WHERE activity_id = a.id AND student_id = :student_id) as is_done"; }
             $query .= " FROM activities a WHERE category_id = :category_id ORDER BY created_at ASC";
@@ -160,10 +160,6 @@ try {
             }
             echo json_encode($acts);
         } elseif ($type === 'materials') {
-            $category_id = $_GET['category_id'] ?? null;
-            $course_id = $_GET['course_id'] ?? null;
-            $student_id = $_GET['student_id'] ?? null;
-            
             $query = "SELECT lm.*";
             if ($student_id) { $query .= ", (SELECT COUNT(*) FROM material_views WHERE material_id = lm.id AND student_id = :student_id) as is_viewed"; }
             $query .= " FROM learning_materials lm WHERE " . ($category_id ? "category_id = :category_id" : "course_id = :course_id") . " ORDER BY created_at ASC";
@@ -208,7 +204,6 @@ try {
                 echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
             }
         } elseif ($type === 'course_enrollees') {
-            $course_id = $_GET['course_id'] ?? null;
             $query = "SELECT u.id, u.first_name, u.last_name, u.email, e.enrolled_at 
                       FROM enrollments e 
                       JOIN users u ON e.student_id = u.id 
@@ -219,16 +214,12 @@ try {
             $stmt->execute();
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         } elseif ($type === 'user_info') {
-            $user_id = $_GET['id'] ?? null;
             $query = "SELECT id, first_name, last_name, middle_name, email, role, birthdate, gender, address, contact_number, created_at FROM users WHERE id = :id";
             $stmt = $db->prepare($query);
             $stmt->bindParam(":id", $user_id);
             $stmt->execute();
             echo json_encode($stmt->fetch(PDO::FETCH_ASSOC));
         } elseif ($type === 'student_progress') {
-            $student_id = $_GET['student_id'] ?? null;
-            $course_id = $_GET['course_id'] ?? null;
-            
             $query = "SELECT ac.id, ac.name,
                         (SELECT COUNT(*) FROM activities WHERE category_id = ac.id) as total_acts,
                         (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_mats,
@@ -244,9 +235,6 @@ try {
             $stmt->execute();
             echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
         } elseif ($type === 'comments') {
-            $activity_id = $_GET['activity_id'] ?? null;
-            $material_id = $_GET['material_id'] ?? null;
-            
             $query = "SELECT cm.*, CONCAT(u.first_name, ' ', u.last_name) as user_name, u.role as user_role 
                       FROM comments cm 
                       JOIN users u ON cm.user_id = u.id 
@@ -410,6 +398,15 @@ try {
         } elseif ($type === 'enrollments') {
             $course_id = $_GET['course_id'] ?? null;
             $student_id = $_GET['student_id'] ?? null;
+            
+            if ($student_id === 'anonymous') {
+                if (($key = array_search($course_id, $_SESSION['anon_enrollments'])) !== false) {
+                    unset($_SESSION['anon_enrollments'][$key]);
+                    $_SESSION['anon_enrollments'] = array_values($_SESSION['anon_enrollments']);
+                }
+                echo json_encode(["message" => "Student unenrolled (Anonymous)"]);
+                exit();
+            }
             
             $q1 = "DELETE FROM submissions WHERE student_id = :sid AND activity_id IN (SELECT id FROM activities WHERE course_id = :cid)";
             $s1 = $db->prepare($q1);

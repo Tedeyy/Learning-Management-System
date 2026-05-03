@@ -681,19 +681,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!Array.isArray(categories)) { learningCategoriesList.innerHTML = `<p style="padding: 1rem; color: #ff4d4d; font-size: 0.85rem;">Error loading modules.</p>`; return; }
             learningCategoriesList.innerHTML = '';
             let totalItems = 0; let totalCompleted = 0;
-            const anonProgress = isAnonymous ? (JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] }) : null;
-            
             categories.forEach(cat => {
                 let t = parseInt(cat.total_items) || 0; 
                 let c = parseInt(cat.completed_items) || 0;
                 
-                if (isAnonymous) {
-                    // This is a bit rough as we don't know which activities are in which category easily without fetching them all,
-                    // but for simplicity we can just rely on the next level's progress for now or fetch activities.
-                    // Actually, let's keep the API's count for logged in and just handle the curriculum items individually.
-                    // To accurately show category progress for anonymous, we'd need to know which items belong to which category.
-                }
-
                 const perc = t > 0 ? Math.round((c/t)*100) : 0; totalItems += t; totalCompleted += c;
                 const el = document.createElement('div'); 
                 el.className = 'category-item'; 
@@ -754,11 +745,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) { learningCategoriesList.innerHTML = `<p style="padding: 1rem; color: #ff4d4d;">System Error.</p>`; }
     }
 
-    async function loadLearningCurriculum() {
-        const moduleNameEl = document.getElementById('learning-module-name');
-        if(moduleNameEl) moduleNameEl.textContent = selectedCategory.name;
-
-        // Fetch latest category stats for accurate progress bar
+    async function updateModuleProgressBar() {
+        if (!selectedCourse || !selectedCategory) return;
         try {
             const statsRes = await fetch(`../api/courses.php?type=categories&course_id=${selectedCourse.id}&student_id=${currentUser.id}`);
             const categories = await statsRes.json();
@@ -771,11 +759,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const progressText = document.getElementById('module-progress-text');
                 if(progressBar) progressBar.style.width = `${perc}%`;
                 if(progressText) progressText.textContent = `${perc}%`;
-                // Update the memory object too
                 selectedCategory.completed_items = currentCat.completed_items;
                 selectedCategory.total_items = currentCat.total_items;
             }
         } catch (err) { console.error("Failed to update progress bar stats:", err); }
+    }
+
+    async function loadLearningCurriculum() {
+        const moduleNameEl = document.getElementById('learning-module-name');
+        if(moduleNameEl) moduleNameEl.textContent = selectedCategory.name;
+
+        await updateModuleProgressBar();
 
         learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 2rem;">Loading lessons...</p>';
         try {
@@ -784,16 +778,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const matRes = await fetch(`../api/courses.php?type=materials&category_id=${selectedCategory.id}&student_id=${currentUser.id}`);
             let materials = await matRes.json();
             
-            if (isAnonymous) {
-                const anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
-                activities = activities.map(a => ({ ...a, is_done: anonProgress.submissions.includes(a.id) ? 1 : 0 }));
-                materials = materials.map(m => ({ ...m, is_viewed: anonProgress.views.includes(m.id) ? 1 : 0 }));
-            }
             if (!Array.isArray(activities) || !Array.isArray(materials)) { learningCurriculumItems.innerHTML = '<p style="padding: 2rem; color: red;">Failed to load curriculum.</p>'; return; }
             if (activities.length === 0 && materials.length === 0) { learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 3rem; color: #999;">This module is empty. Check back later!</p>'; return; }
             learningCurriculumItems.innerHTML = '';
             materials.forEach(mat => {
-                const isViewed = parseInt(mat.is_viewed) > 0; 
+                let isViewed = parseInt(mat.is_viewed) > 0; 
                 const card = document.createElement('div'); 
                 card.className = 'course-card'; 
                 card.style.padding = '1.2rem'; 
@@ -827,23 +816,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Mark as viewed automatically if not already viewed
                     if (!isOpen && !isViewed) {
-                        if (isAnonymous) {
-                            let anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
-                            if (!anonProgress.views.includes(mat.id)) {
-                                anonProgress.views.push(mat.id);
-                                localStorage.setItem('anonProgress', JSON.stringify(anonProgress));
-                            }
-                            loadLearningCurriculum(); loadLearningCategories();
-                        } else {
-                            const res = await fetch('../api/courses.php?type=material_views', { method: 'POST', body: JSON.stringify({ material_id: mat.id, student_id: currentUser.id }) }); 
-                            if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } 
-                        }
+                        const res = await fetch('../api/courses.php?type=material_views', { 
+                            method: 'POST', 
+                            body: JSON.stringify({ material_id: mat.id, student_id: currentUser.id }) 
+                        }); 
+                        if(res.ok) { 
+                            isViewed = true;
+                            card.style.borderLeft = '4px solid #2ecc71';
+                            updateModuleProgressBar();
+                            loadLearningCategories(); 
+                        } 
                     }
                 });
                 learningCurriculumItems.appendChild(card);
             });
             activities.forEach(act => {
-                const isDone = parseInt(act.is_done) > 0; 
+                let isDone = parseInt(act.is_done) > 0; 
                 const card = document.createElement('div'); 
                 card.className = 'course-card'; 
                 card.style.padding = '1.2rem'; 
@@ -877,17 +865,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Mark as done automatically if not already done
                     if (!isOpen && !isDone) {
-                        if (isAnonymous) {
-                            let anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
-                            if (!anonProgress.submissions.includes(act.id)) {
-                                anonProgress.submissions.push(act.id);
-                                localStorage.setItem('anonProgress', JSON.stringify(anonProgress));
-                            }
-                            loadLearningCurriculum(); loadLearningCategories();
-                        } else {
-                            const res = await fetch('../api/courses.php?type=submissions', { method: 'POST', body: JSON.stringify({ activity_id: act.id, student_id: currentUser.id }) }); 
-                            if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } 
-                        }
+                        const res = await fetch('../api/courses.php?type=submissions', { 
+                            method: 'POST', 
+                            body: JSON.stringify({ activity_id: act.id, student_id: currentUser.id }) 
+                        }); 
+                        if(res.ok) { 
+                            isDone = true;
+                            card.style.borderLeft = '4px solid #2ecc71';
+                            updateModuleProgressBar();
+                            loadLearningCategories(); 
+                        } 
                     }
                 });
                 learningCurriculumItems.appendChild(card);
