@@ -106,18 +106,19 @@ try {
                         (SELECT COUNT(*) FROM learning_materials WHERE category_id = ac.id) as total_items";
             
             $params = [':course_id' => $course_id];
-            if ($student_id) {
+            if ($student_id && $student_id !== 'anonymous') {
                 $query .= ", (SELECT COUNT(*) FROM submissions s JOIN activities a ON s.activity_id = a.id WHERE a.category_id = ac.id AND s.student_id = :sid1) +
                             (SELECT COUNT(*) FROM material_views mv JOIN learning_materials lm ON mv.material_id = lm.id WHERE lm.category_id = ac.id AND mv.student_id = :sid2) as completed_items";
                 $params[':sid1'] = $student_id;
                 $params[':sid2'] = $student_id;
+            } else if ($student_id === 'anonymous') {
+                $query .= ", 0 as completed_items";
             }
             
             $query .= " FROM activity_categories ac WHERE course_id = :course_id ORDER BY created_at ASC";
             
             $stmt = $db->prepare($query);
             foreach ($params as $key => $val) { 
-                if ($student_id === 'anonymous' && ($key === ':sid1' || $key === ':sid2')) continue;
                 $stmt->bindValue($key, $val); 
             }
             $stmt->execute();
@@ -145,12 +146,18 @@ try {
             echo json_encode($results);
         } elseif ($type === 'activities') {
             $query = "SELECT a.*";
-            if ($student_id) { $query .= ", (SELECT COUNT(*) FROM submissions WHERE activity_id = a.id AND student_id = :student_id) as is_done"; }
+            if ($student_id && $student_id !== 'anonymous') { 
+                $query .= ", (SELECT COUNT(*) FROM submissions WHERE activity_id = a.id AND student_id = :student_id) as is_done"; 
+            } else if ($student_id === 'anonymous') {
+                $query .= ", 0 as is_done";
+            }
             $query .= " FROM activities a WHERE category_id = :category_id ORDER BY created_at ASC";
             
             $stmt = $db->prepare($query);
             $stmt->bindParam(":category_id", $category_id);
-            if ($student_id && $student_id !== 'anonymous') { $stmt->bindParam(":student_id", $student_id); }
+            if ($student_id && $student_id !== 'anonymous') { 
+                $stmt->bindParam(":student_id", $student_id); 
+            }
             $stmt->execute();
             $acts = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if ($student_id === 'anonymous') {
@@ -161,13 +168,19 @@ try {
             echo json_encode($acts);
         } elseif ($type === 'materials') {
             $query = "SELECT lm.*";
-            if ($student_id) { $query .= ", (SELECT COUNT(*) FROM material_views WHERE material_id = lm.id AND student_id = :student_id) as is_viewed"; }
+            if ($student_id && $student_id !== 'anonymous') { 
+                $query .= ", (SELECT COUNT(*) FROM material_views WHERE material_id = lm.id AND student_id = :student_id) as is_viewed"; 
+            } else if ($student_id === 'anonymous') {
+                $query .= ", 0 as is_viewed";
+            }
             $query .= " FROM learning_materials lm WHERE " . ($category_id ? "category_id = :category_id" : "course_id = :course_id") . " ORDER BY created_at ASC";
             
             $stmt = $db->prepare($query);
             if ($category_id) { $stmt->bindParam(":category_id", $category_id); }
             else { $stmt->bindParam(":course_id", $course_id); }
-            if ($student_id && $student_id !== 'anonymous') { $stmt->bindParam(":student_id", $student_id); }
+            if ($student_id && $student_id !== 'anonymous') { 
+                $stmt->bindParam(":student_id", $student_id); 
+            }
             $stmt->execute();
             $mats = $stmt->fetchAll(PDO::FETCH_ASSOC);
             if ($student_id === 'anonymous') {

@@ -4,12 +4,15 @@
             <img src="../assets/img/logo.jpg" alt="EduReady Logo">
             EduReady
         </a>
-        
+
         <!-- Guest Links (Login/Register) -->
         <ul class="nav-links" id="nav-guest">
             <li style="display: flex; align-items: center; gap: 1rem; color: #64748b; font-size: 0.9rem;">
                 <span>Want to track your progress?</span>
-                <a href="#" id="toggle-auth" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.85rem;">Sign In</a>
+                <a href="#" id="toggle-auth" class="btn btn-outline"
+                    style="padding: 0.5rem 1rem; font-size: 0.85rem;">Sign In</a>
+                <a href="../index.html" class="btn btn-outline"
+                    style="padding: 0.5rem 1rem; font-size: 0.85rem;">Home</a>
             </li>
         </ul>
 
