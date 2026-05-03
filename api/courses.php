@@ -16,6 +16,7 @@ if ($db === null) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'];
+$type = $_GET['type'] ?? null;
 $now = date('Y-m-d H:i:s');
 
 // Initialize anonymous session progress if not exists
@@ -59,7 +60,11 @@ try {
             if ($student_id === 'anonymous') {
                 $query = "SELECT c.id, c.title, c.description, c.created_at, CONCAT(u.first_name, ' ', u.last_name) as instructor_name FROM courses c JOIN users u ON c.instructor_id = u.id";
                 $where = [];
-                if ($search) { $where[] = "(c.title LIKE :search OR c.description LIKE :search)"; $params[':search'] = "%$search%"; }
+                $params = [];
+                if ($search) { 
+                    $where[] = "(c.title LIKE :search OR c.description LIKE :search)"; 
+                    $params[':search'] = "%$search%"; 
+                }
                 if (count($where) > 0) $query .= " WHERE " . implode(" AND ", $where);
                 $query .= " ORDER BY c.created_at DESC";
                 

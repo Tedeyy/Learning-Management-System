@@ -793,13 +793,40 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activities.length === 0 && materials.length === 0) { learningCurriculumItems.innerHTML = '<p style="text-align: center; padding: 3rem; color: #999;">This module is empty. Check back later!</p>'; return; }
             learningCurriculumItems.innerHTML = '';
             materials.forEach(mat => {
-                const isViewed = parseInt(mat.is_viewed) > 0; const card = document.createElement('div'); card.className = 'course-card'; card.style.padding = '1.2rem'; card.style.borderLeft = `4px solid ${isViewed ? '#2ecc71' : '#eee'}`;
-                card.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" class="item-header"><div style="display: flex; align-items: center; gap: 12px;"><i data-lucide="${isViewed ? 'check-circle' : 'file-text'}" style="width: 20px; color: ${isViewed ? '#2ecc71' : '#999'}"></i><strong style="color: ${isViewed ? '#27ae60' : '#333'};">${mat.title}</strong></div><i data-lucide="chevron-down" class="dropdown-icon" style="width: 16px;"></i></div><div class="item-body" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">${mat.description || ''}</p>${getPreviewHTML(mat.url, mat.material_type)}<div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">${isViewed ? '<span style="color: #2ecc71; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;"><i data-lucide="check" style="width:16px;"></i> Viewed</span>' : `<button class="btn btn-primary mark-viewed-btn" data-id="${mat.id}" style="padding: 0.6rem 1.2rem; font-size: 0.85rem; background: #2ecc71; border-color: #2ecc71;">Mark as Viewed</button>`}</div></div>`;
+                const isViewed = parseInt(mat.is_viewed) > 0; 
+                const card = document.createElement('div'); 
+                card.className = 'course-card'; 
+                card.style.padding = '1.2rem'; 
+                card.style.borderLeft = `4px solid ${isViewed ? '#2ecc71' : '#eee'}`;
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" class="item-header">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i data-lucide="${isViewed ? 'check-circle' : 'file-text'}" style="width: 20px; color: ${isViewed ? '#2ecc71' : '#999'}"></i>
+                            <strong style="color: ${isViewed ? '#27ae60' : '#333'};">${mat.title}</strong>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${isViewed ? '<span style="color: #2ecc71; font-size: 0.75rem; font-weight: 700;">VIEWED</span>' : ''}
+                            <i data-lucide="chevron-down" class="dropdown-icon" style="width: 16px;"></i>
+                        </div>
+                    </div>
+                    <div class="item-body" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">${mat.description || ''}</p>
+                        ${getPreviewHTML(mat.url, mat.material_type)}
+                    </div>
+                `;
+                
                 const body = card.querySelector('.item-body');
                 body.appendChild(createCommentSection(mat.id, 'material'));
-                card.querySelector('.item-header').addEventListener('click', () => { const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
-                if(!isViewed) { 
-                    card.querySelector('.mark-viewed-btn').addEventListener('click', async (e) => { 
+                
+                card.querySelector('.item-header').addEventListener('click', async () => { 
+                    const icon = card.querySelector('.dropdown-icon'); 
+                    const isOpen = body.style.display === 'block'; 
+                    body.style.display = isOpen ? 'none' : 'block'; 
+                    icon.style.transform = isOpen ? '' : 'rotate(180deg)'; 
+                    
+                    // Mark as viewed automatically if not already viewed
+                    if (!isOpen && !isViewed) {
                         if (isAnonymous) {
                             let anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
                             if (!anonProgress.views.includes(mat.id)) {
@@ -811,18 +838,45 @@ document.addEventListener('DOMContentLoaded', () => {
                             const res = await fetch('../api/courses.php?type=material_views', { method: 'POST', body: JSON.stringify({ material_id: mat.id, student_id: currentUser.id }) }); 
                             if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } 
                         }
-                    }); 
-                }
+                    }
+                });
                 learningCurriculumItems.appendChild(card);
             });
             activities.forEach(act => {
-                const isDone = parseInt(act.is_done) > 0; const card = document.createElement('div'); card.className = 'course-card'; card.style.padding = '1.2rem'; card.style.borderLeft = `4px solid ${isDone ? '#2ecc71' : 'var(--secondary-color)'}`;
-                card.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" class="item-header"><div style="display: flex; align-items: center; gap: 12px;"><i data-lucide="${isDone ? 'check-circle' : 'activity'}" style="width: 20px; color: ${isDone ? '#2ecc71' : 'var(--secondary-color)'}"></i><strong style="color: ${isDone ? '#27ae60' : '#333'};">${act.title}</strong></div><i data-lucide="chevron-down" class="dropdown-icon" style="width: 16px;"></i></div><div class="item-body" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;"><p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">${act.description || ''}</p>${getPreviewHTML(act.content_url, 'google_form')}<div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">${isDone ? '<span style="color: #2ecc71; font-weight: 600; font-size: 0.85rem; display: flex; align-items: center; gap: 5px;"><i data-lucide="check" style="width:16px;"></i> Completed</span>' : `<button class="btn btn-primary mark-done-btn" data-id="${act.id}" style="padding: 0.6rem 1.2rem; font-size: 0.85rem;">Mark as Done</button>`}</div></div>`;
+                const isDone = parseInt(act.is_done) > 0; 
+                const card = document.createElement('div'); 
+                card.className = 'course-card'; 
+                card.style.padding = '1.2rem'; 
+                card.style.borderLeft = `4px solid ${isDone ? '#2ecc71' : 'var(--secondary-color)'}`;
+                
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" class="item-header">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <i data-lucide="${isDone ? 'check-circle' : 'activity'}" style="width: 20px; color: ${isDone ? '#2ecc71' : 'var(--secondary-color)'}"></i>
+                            <strong style="color: ${isDone ? '#27ae60' : '#333'};">${act.title}</strong>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${isDone ? '<span style="color: #2ecc71; font-size: 0.75rem; font-weight: 700;">COMPLETED</span>' : ''}
+                            <i data-lucide="chevron-down" class="dropdown-icon" style="width: 16px;"></i>
+                        </div>
+                    </div>
+                    <div class="item-body" style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                        <p style="font-size: 0.85rem; color: #666; margin-bottom: 1.5rem;">${act.description || ''}</p>
+                        ${getPreviewHTML(act.content_url, 'google_form')}
+                    </div>
+                `;
+                
                 const body = card.querySelector('.item-body');
                 body.appendChild(createCommentSection(act.id, 'activity'));
-                card.querySelector('.item-header').addEventListener('click', () => { const icon = card.querySelector('.dropdown-icon'); const isOpen = body.style.display === 'block'; body.style.display = isOpen ? 'none' : 'block'; icon.style.transform = isOpen ? '' : 'rotate(180deg)'; });
-                if(!isDone) { 
-                    card.querySelector('.mark-done-btn').addEventListener('click', async (e) => { 
+                
+                card.querySelector('.item-header').addEventListener('click', async () => { 
+                    const icon = card.querySelector('.dropdown-icon'); 
+                    const isOpen = body.style.display === 'block'; 
+                    body.style.display = isOpen ? 'none' : 'block'; 
+                    icon.style.transform = isOpen ? '' : 'rotate(180deg)'; 
+                    
+                    // Mark as done automatically if not already done
+                    if (!isOpen && !isDone) {
                         if (isAnonymous) {
                             let anonProgress = JSON.parse(localStorage.getItem('anonProgress')) || { submissions: [], views: [] };
                             if (!anonProgress.submissions.includes(act.id)) {
@@ -834,8 +888,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             const res = await fetch('../api/courses.php?type=submissions', { method: 'POST', body: JSON.stringify({ activity_id: act.id, student_id: currentUser.id }) }); 
                             if(res.ok) { loadLearningCurriculum(); loadLearningCategories(); } 
                         }
-                    }); 
-                }
+                    }
+                });
                 learningCurriculumItems.appendChild(card);
             });
             if(typeof lucide !== 'undefined') lucide.createIcons();

@@ -1,3 +1,5 @@
 .env
 
 vendor
+
+eduready_db.sql

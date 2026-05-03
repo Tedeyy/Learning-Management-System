@@ -1,5 +1,5 @@
--- MySQL Database Schema for EduReady Learning Management System
--- This file contains the consolidated schema based on schema.sql and subsequent migrations.
+CREATE DATABASE learning_management_system;
+USE learning_management_system;
 
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
